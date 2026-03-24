@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/profile_service.dart';
 import '../services/firebase_storage_service.dart';
+import '../services/firestore_service.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -16,11 +17,14 @@ class AppDrawer extends StatefulWidget {
 class _AppDrawerState extends State<AppDrawer> {
   final ProfileService _profileService = ProfileService();
   final FirebaseStorageService _storageService = FirebaseStorageService();
+  final FirestoreService _firestoreService = FirestoreService();
   final ImagePicker _picker = ImagePicker();
 
   String? _profileImageUrl;
   String _userName = 'Advanced User';
+  String _userEmail = 'premium@advanced.com';
   bool _isUploadingProfile = false;
+  bool _isDarkMode = false; // Local state for toggle demonstration
 
   @override
   void initState() {
@@ -38,10 +42,12 @@ class _AppDrawerState extends State<AppDrawer> {
   Future<void> _loadProfileData() async {
     final url = await _profileService.getProfilePhoto();
     final name = await _profileService.getUserName();
+    final email = await _profileService.getUserEmail();
     if (mounted) {
       setState(() {
         _profileImageUrl = url;
         _userName = name;
+        _userEmail = email;
       });
     }
   }
@@ -110,6 +116,34 @@ class _AppDrawerState extends State<AppDrawer> {
     }
   }
 
+  void _editEmail() async {
+    final controller = TextEditingController(text: _userEmail);
+    final newEmail = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Email'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: 'Enter your email'),
+          autofocus: true,
+          keyboardType: TextInputType.emailAddress,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (newEmail != null && newEmail.isNotEmpty) {
+      await _profileService.setUserEmail(newEmail);
+      setState(() => _userEmail = newEmail);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -163,25 +197,63 @@ class _AppDrawerState extends State<AppDrawer> {
             ),
             accountName: Row(
               children: [
-                Text(
-                  _userName,
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+                Expanded(
+                  child: Text(
+                    _userName,
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit, size: 16, color: Colors.white70),
                   onPressed: _editName,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  visualDensity: VisualDensity.compact,
                 ),
               ],
             ),
-            accountEmail: const Text('Premium Member'),
+            accountEmail: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _userEmail,
+                    style: GoogleFonts.outfit(fontSize: 14, color: Colors.white70),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.alternate_email, size: 14, color: Colors.white70),
+                  onPressed: _editEmail,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
           ),
           _DrawerItem(
-            icon: Icons.notes,
+            icon: Icons.notes_rounded,
             label: 'All Notes',
             onTap: () => Navigator.pop(context),
+            trailing: StreamBuilder<int>(
+              stream: _firestoreService.getNoteCount(),
+              builder: (context, snapshot) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${snapshot.data ?? 0}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
           _DrawerItem(
             icon: Icons.archive_outlined,
@@ -190,6 +262,38 @@ class _AppDrawerState extends State<AppDrawer> {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/archive');
             },
+          ),
+          _DrawerItem(
+            icon: Icons.delete_outline_rounded,
+            label: 'Trash',
+            onTap: () {},
+          ),
+          const Divider(),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text('LABELS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+          ),
+          _DrawerItem(
+            icon: Icons.label_outline_rounded,
+            label: 'Personal',
+            onTap: () {},
+          ),
+          _DrawerItem(
+            icon: Icons.label_outline_rounded,
+            label: 'Work',
+            onTap: () {},
+          ),
+          _DrawerItem(
+            icon: Icons.add_rounded,
+            label: 'Create new label',
+            onTap: () {},
+          ),
+          const Divider(),
+          SwitchListTile(
+            title: const Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w500)),
+            secondary: const Icon(Icons.dark_mode_outlined),
+            value: _isDarkMode,
+            onChanged: (value) => setState(() => _isDarkMode = value),
           ),
           const Divider(),
           _DrawerItem(
@@ -327,11 +431,13 @@ class _DrawerItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Widget? trailing;
 
   const _DrawerItem({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.trailing,
   });
 
   @override
@@ -339,6 +445,7 @@ class _DrawerItem extends StatelessWidget {
     return ListTile(
       leading: Icon(icon),
       title: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+      trailing: trailing,
       onTap: onTap,
     );
   }

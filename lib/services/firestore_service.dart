@@ -25,4 +25,8 @@ class FirestoreService {
   Future<void> deleteNote(String id) {
     return _notesCollection.doc(id).delete();
   }
+
+  Stream<int> getNoteCount() {
+    return _notesCollection.snapshots().map((snapshot) => snapshot.size);
+  }
 }
