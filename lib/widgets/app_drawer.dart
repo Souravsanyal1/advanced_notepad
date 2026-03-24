@@ -356,59 +356,100 @@ class _AppDrawerState extends State<AppDrawer> {
   void _showDonationDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(Icons.favorite, color: Colors.red[400]),
-            const SizedBox(width: 10),
-            const Text('Support Us'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'If you love using Advanced Notepad, consider supporting our development journey!',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Row(
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Icon(Icons.mail_outline),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Payment ID: sourav@upi',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                  const Icon(Icons.favorite, color: Color(0xFFFF5252), size: 28),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Support Us',
+                    style: GoogleFonts.outfit(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              Text(
+                'If you love using Advanced Notepad, consider supporting our development journey!',
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  color: Colors.white.withValues(alpha: 0.8),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4A3F75),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.mail_outline, color: Colors.white, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Payment ID: sourav@upi',
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'Maybe Later',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFC5B4F1),
+                      foregroundColor: Colors.black87,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Donate Now',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Maybe Later'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Donate Now'),
-          ),
-        ],
       ),
     );
   }
