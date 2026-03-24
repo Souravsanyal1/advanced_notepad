@@ -376,7 +376,7 @@ class _AppDrawerState extends State<AppDrawer> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              'App Version: 1.0.0+1',
+              'App Version: 1.0.1+2',
               style: TextStyle(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 fontSize: 12,

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:rxdart/rxdart.dart';
 import '../models/note.dart';
 
 class FirestoreService {
@@ -37,11 +38,36 @@ class FirestoreService {
   }
 
 
-  // Label Operations
+  // Label Operations (Dynamic & Combined)
   Stream<List<String>> getLabels() {
-    return _labelsCollection.snapshots().map((snapshot) {
+    final explicitLabelsStream = _labelsCollection.snapshots().map((snapshot) {
       return snapshot.docs.map((doc) => doc.get('name') as String).toList();
     });
+
+    final noteLabelsStream = _notesCollection
+        .where('isDeleted', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) {
+      final Set<String> allLabels = {};
+      for (var doc in snapshot.docs) {
+        final List<dynamic>? labels = doc.get('labels') as List<dynamic>?;
+        if (labels != null) {
+          for (var label in labels) {
+            allLabels.add(label.toString());
+          }
+        }
+      }
+      return allLabels.toList();
+    });
+
+    return Rx.combineLatest2<List<String>, List<String>, List<String>>(
+      explicitLabelsStream,
+      noteLabelsStream,
+      (explicit, fromNotes) {
+        final combined = <String>{...explicit, ...fromNotes}.toList();
+        return combined..sort();
+      },
+    );
   }
 
   Future<void> addLabel(String name) async {

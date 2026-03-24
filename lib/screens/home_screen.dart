@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../models/note.dart';
 import '../services/firestore_service.dart';
@@ -303,10 +304,11 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, snapshot) {
         final labels = ['All', ...(snapshot.data ?? [])];
         return Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          height: 100, // Increased height for better spacing
+          padding: const EdgeInsets.symmetric(vertical: 20),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: labels.length,
             itemBuilder: (context, index) {
@@ -314,28 +316,44 @@ class _HomeScreenState extends State<HomeScreen> {
               final isSelected = (label == 'All' && activeLabel == null) || label == activeLabel;
               
               return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: FilterChip(
-                  label: Text(label),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      _selectedLabel = label == 'All' ? null : label;
-                    });
+                padding: const EdgeInsets.only(right: 12),
+                child: InkWell(
+                  onTap: () {
+                    if (!isSelected) {
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        _selectedLabel = label == 'All' ? null : label;
+                      });
+                    }
                   },
-                  backgroundColor: theme.colorScheme.surface,
-                  selectedColor: theme.colorScheme.primaryContainer,
-                  labelStyle: TextStyle(
-                    color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(
-                      color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outline.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(25),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    decoration: BoxDecoration(
+                      color: isSelected 
+                        ? theme.colorScheme.primary 
+                        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: isSelected ? [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ] : [],
+                    ),
+                    child: Center(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : theme.colorScheme.onSurfaceVariant,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontSize: 15,
+                        ),
+                      ),
                     ),
                   ),
-                  showCheckmark: false,
                 ),
               );
             },
