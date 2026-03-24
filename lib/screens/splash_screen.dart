@@ -47,7 +47,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.black,
       body: Center(
         child: FadeTransition(
           opacity: _animation,
@@ -56,30 +56,31 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             children: [
               Image.asset(
                 'assets/logo.png',
-                width: 150,
-                height: 150,
+                width: 180,
+                height: 180,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               const Text(
                 'Advanced Notepad',
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  color: Color(0xFF673AB7),
+                  letterSpacing: 2.0,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Sync your thoughts, beautifully.',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey,
+                  color: Colors.white.withOpacity(0.7),
+                  letterSpacing: 1.1,
                 ),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 64),
               const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF673AB7)),
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
                 strokeWidth: 2,
               ),
             ],
