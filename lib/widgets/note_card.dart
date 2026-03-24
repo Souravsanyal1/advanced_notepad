@@ -10,13 +10,20 @@ class NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color contrastColor = Color(note.color).computeLuminance() > 0.5
+        ? Colors.black87
+        : Colors.white;
+    final Color hintColor = Color(note.color).computeLuminance() > 0.5
+        ? Colors.black54
+        : Colors.white70;
+
     return Card(
       elevation: 0.5,
-      color: Color(note.color).withValues(alpha: 0.9),
+      color: Color(note.color).withValues(alpha: 0.95),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: Colors.grey.withValues(alpha: 0.1),
+          color: Colors.black.withValues(alpha: 0.05),
           width: 1,
         ),
       ),
@@ -35,31 +42,37 @@ class NoteCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         note.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: contrastColor,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   if (note.isPinned)
-                    const Icon(Icons.push_pin, size: 16, color: Colors.black54),
+                    Icon(Icons.push_pin, size: 16, color: contrastColor),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                note.content,
-                style: const TextStyle(fontSize: 14, height: 1.5),
-                maxLines: 8,
-                overflow: TextOverflow.ellipsis,
-              ),
+              if (note.content.isNotEmpty)
+                Text(
+                  note.content,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: contrastColor,
+                  ),
+                  maxLines: 8,
+                  overflow: TextOverflow.ellipsis,
+                ),
               const SizedBox(height: 12),
               Text(
                 DateFormat('MMM d, yyyy').format(note.updatedAt),
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.black.withValues(alpha: 0.6),
+                  color: hintColor,
                 ),
               ),
             ],

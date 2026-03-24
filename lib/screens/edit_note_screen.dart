@@ -104,26 +104,52 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     }
   }
 
+  Color _getContrastColor() {
+    return Color(_selectedColor).computeLuminance() > 0.5
+        ? Colors.black87
+        : Colors.white;
+  }
+
+  Color _getHintColor() {
+    return Color(_selectedColor).computeLuminance() > 0.5
+        ? Colors.black45
+        : Colors.white70;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final contrastColor = _getContrastColor();
+    final hintColor = _getHintColor();
+
     return Scaffold(
       backgroundColor: Color(_selectedColor),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: contrastColor),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
-            icon: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+            icon: Icon(
+              _isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+              color: contrastColor,
+            ),
             onPressed: () => setState(() => _isPinned = !_isPinned),
             tooltip: 'Pin note',
           ),
           IconButton(
-            icon: Icon(_isArchived ? Icons.archive : Icons.archive_outlined),
+            icon: Icon(
+              _isArchived ? Icons.archive : Icons.archive_outlined,
+              color: contrastColor,
+            ),
             onPressed: () => setState(() => _isArchived = !_isArchived),
             tooltip: 'Archive note',
           ),
           if (widget.note != null)
             IconButton(
-              icon: const Icon(Icons.delete_outline),
+              icon: Icon(Icons.delete_outline, color: contrastColor),
               onPressed: _deleteNote,
               tooltip: 'Delete note',
             ),
@@ -136,34 +162,70 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: TextField(
               controller: _titleController,
-              decoration: const InputDecoration(
+              cursorColor: contrastColor,
+              decoration: InputDecoration(
                 hintText: 'Title',
                 border: InputBorder.none,
-                hintStyle: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black54),
+                hintStyle: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: hintColor,
+                ),
               ),
-              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: contrastColor,
+              ),
             ),
           ),
+          if (widget.note != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Last edited: ${widget.note!.updatedAt.day}/${widget.note!.updatedAt.month}/${widget.note!.updatedAt.year}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: hintColor,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: TextField(
                 controller: _contentController,
                 maxLines: null,
-                decoration: const InputDecoration(
+                cursorColor: contrastColor,
+                decoration: InputDecoration(
                   hintText: 'Type something...',
                   border: InputBorder.none,
-                  hintStyle: TextStyle(fontSize: 18, color: Colors.black45),
+                  hintStyle: TextStyle(fontSize: 18, color: hintColor),
                 ),
-                style: const TextStyle(fontSize: 18, height: 1.6),
+                style: TextStyle(
+                  fontSize: 18,
+                  height: 1.6,
+                  color: contrastColor,
+                ),
               ),
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              color: Colors.white.withValues(alpha: Color(_selectedColor).computeLuminance() > 0.5 ? 0.3 : 0.1),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                )
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -171,49 +233,57 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: _colors.map((color) {
+                    children: _colors.map((colorValue) {
+                      final isSelected = _selectedColor == colorValue;
                       return GestureDetector(
-                        onTap: () => setState(() => _selectedColor = color),
-                        child: Container(
-                          width: 45,
-                          height: 45,
+                        onTap: () => setState(() => _selectedColor = colorValue),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: isSelected ? 50 : 40,
+                          height: isSelected ? 50 : 40,
                           margin: const EdgeInsets.symmetric(horizontal: 6),
                           decoration: BoxDecoration(
-                            color: Color(color),
+                            color: Color(colorValue),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: _selectedColor == color
-                                  ? Colors.black87
-                                  : Colors.black12,
-                              width: _selectedColor == color ? 2.5 : 1,
+                              color: isSelected ? Colors.black : Colors.black12,
+                              width: isSelected ? 3 : 1,
                             ),
                             boxShadow: [
-                              if (_selectedColor == color)
+                              if (isSelected)
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 8,
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 )
                             ],
                           ),
+                          child: isSelected
+                              ? const Icon(Icons.check, color: Colors.black, size: 20)
+                              : null,
                         ),
                       );
                     }).toList(),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
-                  height: 54,
+                  height: 56,
                   child: ElevatedButton.icon(
                     onPressed: _saveNote,
-                    icon: const Icon(Icons.check),
-                    label: const Text('Save Note', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    icon: const Icon(Icons.check_circle_outline, size: 24),
+                    label: const Text(
+                      'Save Note',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black.withValues(alpha: 0.8),
+                      backgroundColor: Colors.black87,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      elevation: 4,
                     ),
                   ),
                 ),
