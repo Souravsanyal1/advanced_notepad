@@ -6,6 +6,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/profile_service.dart';
 import '../services/firebase_storage_service.dart';
 import '../services/firestore_service.dart';
+import '../services/theme_service.dart';
+
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -24,20 +26,40 @@ class _AppDrawerState extends State<AppDrawer> {
   String _userName = 'Advanced User';
   String _userEmail = 'premium@advanced.com';
   bool _isUploadingProfile = false;
-  bool _isDarkMode = false; // Local state for toggle demonstration
+  final ThemeService _themeService = ThemeService();
+  List<String> _labels = [];
+
 
   @override
   void initState() {
     super.initState();
     _profileService.addListener(_loadProfileData);
+    _themeService.addListener(_handleThemeChange);
     _loadProfileData();
+    _listenToLabels();
   }
 
   @override
   void dispose() {
     _profileService.removeListener(_loadProfileData);
+    _themeService.removeListener(_handleThemeChange);
     super.dispose();
   }
+
+  void _handleThemeChange() {
+    if (mounted) setState(() {});
+  }
+
+  void _listenToLabels() {
+    _firestoreService.getLabels().listen((labels) {
+      if (mounted) {
+        setState(() {
+          _labels = labels;
+        });
+      }
+    });
+  }
+
 
   Future<void> _loadProfileData() async {
     final url = await _profileService.getProfilePhoto();
@@ -216,7 +238,7 @@ class _AppDrawerState extends State<AppDrawer> {
               children: [
                 Text(
                   _userEmail,
-                  style: GoogleFonts.outfit(fontSize: 14, color: Colors.white.withOpacity(0.9)),
+                  style: GoogleFonts.outfit(fontSize: 14, color: Colors.white.withValues(alpha: 0.9)),
                 ),
                 const SizedBox(width: 8),
                 InkWell(
@@ -259,37 +281,41 @@ class _AppDrawerState extends State<AppDrawer> {
               Navigator.pushNamed(context, '/archive');
             },
           ),
-          _DrawerItem(
+           _DrawerItem(
             icon: Icons.delete_outline_rounded,
             label: 'Trash',
-            onTap: () {},
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/trash');
+            },
           ),
           const Divider(),
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Text('LABELS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
           ),
-          _DrawerItem(
+          // Personal & Work Labels (Dynamic)
+          ..._labels.map((label) => _DrawerItem(
             icon: Icons.label_outline_rounded,
-            label: 'Personal',
-            onTap: () {},
-          ),
-          _DrawerItem(
-            icon: Icons.label_outline_rounded,
-            label: 'Work',
-            onTap: () {},
-          ),
+            label: label,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/home', arguments: label);
+            },
+          )),
+
           _DrawerItem(
             icon: Icons.add_rounded,
-            label: 'Create new label',
-            onTap: () {},
+            label: 'Create new Label',
+            onTap: () => _showCreateLabelDialog(),
           ),
+
           const Divider(),
           SwitchListTile(
             title: const Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w500)),
             secondary: const Icon(Icons.dark_mode_outlined),
-            value: _isDarkMode,
-            onChanged: (value) => setState(() => _isDarkMode = value),
+            value: _themeService.isDarkMode,
+            onChanged: (value) => _themeService.toggleTheme(),
           ),
           const Divider(),
           _DrawerItem(
@@ -421,7 +447,40 @@ class _AppDrawerState extends State<AppDrawer> {
       ),
     );
   }
+
+  void _showCreateLabelDialog() async {
+    final controller = TextEditingController();
+    final newLabel = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('New Label'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Label name',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+
+    if (newLabel != null && newLabel.isNotEmpty) {
+      await _firestoreService.addLabel(newLabel);
+    }
+  }
 }
+
 
 class _DrawerItem extends StatelessWidget {
   final IconData icon;

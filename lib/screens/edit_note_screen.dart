@@ -25,8 +25,12 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   int _selectedColor = 0xFFFFFFFF; 
   bool _isPinned = false;
   bool _isArchived = false;
+  bool _isDeleted = false;
   String? _imageUrl;
   bool _isUploading = false;
+  List<String> _selectedLabels = [];
+  List<String> _availableLabels = [];
+
 
   final List<int> _colors = [
     0xFFFFFFFF, // white
@@ -50,9 +54,23 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       _selectedColor = widget.note!.color;
       _isPinned = widget.note!.isPinned;
       _isArchived = widget.note!.isArchived;
+      _isDeleted = widget.note!.isDeleted;
       _imageUrl = widget.note!.imageUrl;
+      _selectedLabels = List<String>.from(widget.note!.labels);
     }
+    _loadLabels();
   }
+
+  void _loadLabels() {
+    _firestoreService.getLabels().listen((labels) {
+      if (mounted) {
+        setState(() {
+          _availableLabels = labels;
+        });
+      }
+    });
+  }
+
 
   Future<void> _pickAndUploadImage() async {
     try {
@@ -100,6 +118,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         isPinned: _isPinned,
         isArchived: _isArchived,
         imageUrl: _imageUrl,
+        labels: _selectedLabels,
       );
       _firestoreService.addNote(newNote);
     } else {
@@ -111,6 +130,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         isPinned: _isPinned,
         isArchived: _isArchived,
         imageUrl: _imageUrl,
+        labels: _selectedLabels,
       );
       _firestoreService.updateNote(updatedNote);
     }
@@ -137,12 +157,47 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         ),
       );
 
+       if (confirmed == true) {
+        await _firestoreService.moveToTrash(widget.note!.id);
+        if (mounted) Navigator.pop(context);
+      }
+    }
+  }
+
+  void _restoreNote() async {
+    if (widget.note != null) {
+      await _firestoreService.restoreFromTrash(widget.note!.id);
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
+  void _permanentlyDeleteNote() async {
+    if (widget.note != null) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Permanently'),
+          content: const Text('This action cannot be undone. Are you sure?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+
       if (confirmed == true) {
         await _firestoreService.deleteNote(widget.note!.id);
         if (mounted) Navigator.pop(context);
       }
     }
   }
+
 
   Color _getContrastColor() {
     return Color(_selectedColor).computeLuminance() > 0.5
@@ -170,45 +225,62 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
           icon: Icon(Icons.arrow_back, color: contrastColor),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-              color: contrastColor,
-            ),
-            onPressed: () => setState(() => _isPinned = !_isPinned),
-            tooltip: 'Pin note',
-          ),
-          IconButton(
-            icon: Icon(
-              _isArchived ? Icons.archive : Icons.archive_outlined,
-              color: contrastColor,
-            ),
-            onPressed: () => setState(() => _isArchived = !_isArchived),
-            tooltip: 'Archive note',
-          ),
-          IconButton(
-            icon: Icon(Icons.add_photo_alternate_outlined, color: contrastColor),
-            onPressed: _isUploading ? null : _pickAndUploadImage,
-            tooltip: 'Add image',
-          ),
-          if (widget.note != null)
-            IconButton(
-              icon: Icon(Icons.delete_outline, color: contrastColor),
-              onPressed: _deleteNote,
-              tooltip: 'Delete note',
-            ),
-          const SizedBox(width: 8),
-        ],
+         actions: _isDeleted
+            ? [
+                IconButton(
+                  icon: Icon(Icons.restore_from_trash_rounded, color: contrastColor),
+                  onPressed: _restoreNote,
+                  tooltip: 'Restore note',
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete_forever_rounded, color: contrastColor),
+                  onPressed: _permanentlyDeleteNote,
+                  tooltip: 'Delete permanently',
+                ),
+                const SizedBox(width: 8),
+              ]
+            : [
+                IconButton(
+                  icon: Icon(
+                    _isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                    color: contrastColor,
+                  ),
+                  onPressed: () => setState(() => _isPinned = !_isPinned),
+                  tooltip: 'Pin note',
+                ),
+                IconButton(
+                  icon: Icon(
+                    _isArchived ? Icons.archive : Icons.archive_outlined,
+                    color: contrastColor,
+                  ),
+                  onPressed: () => setState(() => _isArchived = !_isArchived),
+                  tooltip: 'Archive note',
+                ),
+                IconButton(
+                  icon: Icon(Icons.add_photo_alternate_outlined, color: contrastColor),
+                  onPressed: _isUploading ? null : _pickAndUploadImage,
+                  tooltip: 'Add image',
+                ),
+                if (widget.note != null)
+                  IconButton(
+                    icon: Icon(Icons.delete_outline, color: contrastColor),
+                    onPressed: _deleteNote,
+                    tooltip: 'Delete note',
+                  ),
+                const SizedBox(width: 8),
+              ],
+
       ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: TextField(
+             child: TextField(
               controller: _titleController,
               cursorColor: contrastColor,
+              readOnly: _isDeleted,
               decoration: InputDecoration(
+
                 hintText: 'Title',
                 border: InputBorder.none,
                 hintStyle: TextStyle(
@@ -280,11 +352,13 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: TextField(
+               child: TextField(
                 controller: _contentController,
                 maxLines: null,
                 cursorColor: contrastColor,
+                readOnly: _isDeleted,
                 decoration: InputDecoration(
+
                   hintText: 'Type something...',
                   border: InputBorder.none,
                   hintStyle: TextStyle(fontSize: 18, color: hintColor),
@@ -297,82 +371,131 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
               ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: Color(_selectedColor).computeLuminance() > 0.5 ? 0.3 : 0.1),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                )
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _colors.map((colorValue) {
-                      final isSelected = _selectedColor == colorValue;
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedColor = colorValue),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: isSelected ? 50 : 40,
-                          height: isSelected ? 50 : 40,
-                          margin: const EdgeInsets.symmetric(horizontal: 6),
-                          decoration: BoxDecoration(
-                            color: Color(colorValue),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? Colors.black : Colors.black12,
-                              width: isSelected ? 3 : 1,
+           if (!_isDeleted)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: Color(_selectedColor).computeLuminance() > 0.5 ? 0.3 : 0.1),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _colors.map((colorValue) {
+                        final isSelected = _selectedColor == colorValue;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedColor = colorValue),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: isSelected ? 50 : 40,
+                            height: isSelected ? 50 : 40,
+                            margin: const EdgeInsets.symmetric(horizontal: 6),
+                            decoration: BoxDecoration(
+                              color: Color(colorValue),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected ? Colors.black : Colors.black12,
+                                width: isSelected ? 3 : 1,
+                              ),
+                              boxShadow: [
+                                if (isSelected)
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  )
+                              ],
                             ),
-                            boxShadow: [
-                              if (isSelected)
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                )
-                            ],
+                            child: isSelected
+                                ? const Icon(Icons.check, color: Colors.black, size: 20)
+                                : null,
                           ),
-                          child: isSelected
-                              ? const Icon(Icons.check, color: Colors.black, size: 20)
-                              : null,
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                   const SizedBox(height: 16),
+                  if (_availableLabels.isNotEmpty) ...[
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Labels',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: contrastColor.withValues(alpha: 0.7),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton.icon(
-                    onPressed: _saveNote,
-                    icon: const Icon(Icons.check_circle_outline, size: 24),
-                    label: const Text(
-                      'Save Note',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black87,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
                       ),
-                      elevation: 4,
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: _availableLabels.map((label) {
+                          final isSelected = _selectedLabels.contains(label);
+                          return FilterChip(
+                            label: Text(label, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : contrastColor)),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedLabels.add(label);
+                                } else {
+                                  _selectedLabels.remove(label);
+                                }
+                              });
+                            },
+                            selectedColor: Colors.black87,
+                            checkmarkColor: Colors.white,
+                            backgroundColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(color: isSelected ? Colors.black87 : contrastColor.withValues(alpha: 0.3)),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: _saveNote,
+                      icon: const Icon(Icons.check_circle_outline, size: 24),
+                      label: const Text(
+                        'Save Note',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black87,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 4,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+
         ],
       ),
     );

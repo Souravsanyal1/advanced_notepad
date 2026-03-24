@@ -11,6 +11,10 @@ class Note {
   final bool isPinned;
   final bool isArchived;
   final String? imageUrl;
+  final List<String> labels;
+  final bool isDeleted;
+
+
 
   Note({
     required this.id,
@@ -22,6 +26,8 @@ class Note {
     this.isPinned = false,
     this.isArchived = false,
     this.imageUrl,
+    this.labels = const [],
+    this.isDeleted = false,
   });
 
   factory Note.fromFirestore(DocumentSnapshot doc) {
@@ -36,6 +42,8 @@ class Note {
       isPinned: data['isPinned'] ?? false,
       isArchived: data['isArchived'] ?? false,
       imageUrl: data['imageUrl'],
+      labels: List<String>.from(data['labels'] ?? []),
+      isDeleted: data['isDeleted'] ?? false,
     );
   }
 
@@ -49,6 +57,8 @@ class Note {
       'isPinned': isPinned,
       'isArchived': isArchived,
       'imageUrl': imageUrl,
+      'labels': labels,
+      'isDeleted': isDeleted,
     };
   }
 
@@ -60,6 +70,8 @@ class Note {
     bool? isPinned,
     bool? isArchived,
     String? imageUrl,
+    List<String>? labels,
+    bool? isDeleted,
   }) {
     return Note(
       id: id,
@@ -71,6 +83,8 @@ class Note {
       isPinned: isPinned ?? this.isPinned,
       isArchived: isArchived ?? this.isArchived,
       imageUrl: imageUrl ?? this.imageUrl,
+      labels: labels ?? this.labels,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 }

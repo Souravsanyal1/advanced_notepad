@@ -23,6 +23,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final ProfileService _profileService = ProfileService();
   String _searchQuery = '';
   String? _profileImageUrl;
+  String? _selectedLabel;
+
 
   @override
   void initState() {
@@ -47,6 +49,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final String? routeLabel = ModalRoute.of(context)?.settings.arguments as String?;
+    final activeLabel = _selectedLabel ?? routeLabel;
+
     
     return Scaffold(
       drawer: const AppDrawer(),
@@ -57,12 +62,18 @@ class _HomeScreenState extends State<HomeScreen> {
         child: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
-            title: const Text('My Notes', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(activeLabel ?? 'My Notes', style: const TextStyle(fontWeight: FontWeight.bold)),
             floating: true,
             snap: true,
             pinned: true,
             elevation: innerBoxIsScrolled ? 4 : 0,
             forceElevated: innerBoxIsScrolled,
+            leading: activeLabel != null 
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+                )
+              : null,
             actions: [
               IconButton(onPressed: () {}, icon: const Icon(Icons.sort)),
               GestureDetector(
@@ -106,8 +117,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
-        body: StreamBuilder<List<Note>>(
-          stream: _firestoreService.getNotes(),
+        body: Column(
+          children: [
+            _buildLabelSelector(theme, activeLabel),
+            Expanded(
+              child: StreamBuilder<List<Note>>(
+
+          stream: _firestoreService.getNotes(
+            label: activeLabel,
+            isArchived: false,
+            isDeleted: false,
+          ),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -116,7 +136,8 @@ class _HomeScreenState extends State<HomeScreen> {
               return Center(child: Text('Error: ${snapshot.error}'));
             }
 
-            final notes = (snapshot.data ?? []).where((note) => !note.isArchived).toList();
+            final notes = snapshot.data ?? [];
+
             final filteredNotes = notes.where((note) {
               return note.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
                   note.content.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -244,8 +265,13 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       ),
-      ),
+    ],
+  ),
+),
+),
       floatingActionButton: OpenContainer(
+
+
         transitionDuration: const Duration(milliseconds: 500),
         openColor: theme.colorScheme.surface,
         closedElevation: 6,
@@ -267,6 +293,53 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+    );
+  }
+  Widget _buildLabelSelector(ThemeData theme, String? activeLabel) {
+    return StreamBuilder<List<String>>(
+      stream: _firestoreService.getLabels(),
+      builder: (context, snapshot) {
+        final labels = ['All', ...(snapshot.data ?? [])];
+        return Container(
+          height: 60,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: labels.length,
+            itemBuilder: (context, index) {
+              final label = labels[index];
+              final isSelected = (label == 'All' && activeLabel == null) || label == activeLabel;
+              
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(label),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      _selectedLabel = label == 'All' ? null : label;
+                    });
+                  },
+                  backgroundColor: theme.colorScheme.surface,
+                  selectedColor: theme.colorScheme.primaryContainer,
+                  labelStyle: TextStyle(
+                    color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  showCheckmark: false,
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

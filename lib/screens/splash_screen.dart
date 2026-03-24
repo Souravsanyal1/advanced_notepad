@@ -46,8 +46,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: isDark ? Colors.black : Colors.white,
+
       body: Center(
         child: FadeTransition(
           opacity: _animation,
@@ -55,32 +58,36 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
-                'assets/logo.png',
-                width: 180,
-                height: 180,
+                isDark ? 'assets/splash_dark.png' : 'assets/splash_light.png',
+                width: 280,
+                // Removed fixed height to maintain aspect ratio
               ),
+
               const SizedBox(height: 32),
-              const Text(
+              Text(
                 'Advanced Notepad',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2.0,
-                  color: Colors.white,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
+
               const SizedBox(height: 12),
               Text(
                 'Sync your thoughts, beautifully.',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.white.withOpacity(0.7),
+                  color: (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.7),
+
                   letterSpacing: 1.1,
                 ),
               ),
               const SizedBox(height: 64),
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(isDark ? Colors.white70 : Colors.blueAccent),
+
                 strokeWidth: 2,
               ),
             ],

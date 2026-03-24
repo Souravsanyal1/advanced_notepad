@@ -7,8 +7,8 @@ import '../services/firestore_service.dart';
 import '../widgets/note_card.dart';
 import 'edit_note_screen.dart';
 
-class ArchiveScreen extends StatelessWidget {
-  const ArchiveScreen({super.key});
+class TrashScreen extends StatelessWidget {
+  const TrashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,10 +17,10 @@ class ArchiveScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Archive', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Trash', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: StreamBuilder<List<Note>>(
-        stream: firestoreService.getNotes(isArchived: true, isDeleted: false),
+        stream: firestoreService.getNotes(isDeleted: true),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -29,9 +29,9 @@ class ArchiveScreen extends StatelessWidget {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final archivedNotes = snapshot.data ?? [];
+          final deletedNotes = snapshot.data ?? [];
 
-          if (archivedNotes.isEmpty) {
+          if (deletedNotes.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -39,13 +39,13 @@ class ArchiveScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                      color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.archive_rounded, size: 80, color: theme.colorScheme.secondary),
+                    child: Icon(Icons.delete_outline_rounded, size: 80, color: theme.colorScheme.error),
                   ),
                   const SizedBox(height: 16),
-                  Text('Archive is empty', style: theme.textTheme.titleMedium),
+                  Text('Trash is empty', style: theme.textTheme.titleMedium),
                 ],
               ),
             );
@@ -58,9 +58,9 @@ class ArchiveScreen extends StatelessWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
-                itemCount: archivedNotes.length,
+                itemCount: deletedNotes.length,
                 itemBuilder: (context, index) {
-                  final note = archivedNotes[index];
+                  final note = deletedNotes[index];
                   return AnimationConfiguration.staggeredGrid(
                     position: index,
                     duration: const Duration(milliseconds: 375),

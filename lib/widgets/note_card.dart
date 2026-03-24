@@ -89,13 +89,49 @@ class NoteCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               const SizedBox(height: 12),
-              Text(
-                DateFormat('MMM d, yyyy').format(note.updatedAt),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: hintColor,
-                ),
+               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    DateFormat('MMM d, yyyy').format(note.updatedAt),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: hintColor,
+                    ),
+                  ),
+                  if (note.labels.isNotEmpty)
+                    Row(
+                      children: [
+                        const Icon(Icons.label_outline, size: 12, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${note.labels.length} labels',
+                          style: const TextStyle(fontSize: 10, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                ],
               ),
+              if (note.labels.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: note.labels.take(3).map((label) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: contrastColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: contrastColor.withValues(alpha: 0.1)),
+                    ),
+                    child: Text(
+                      label,
+                      style: TextStyle(fontSize: 10, color: contrastColor, fontWeight: FontWeight.w500),
+                    ),
+                  )).toList(),
+                ),
+              ],
+
             ],
           ),
         ),
