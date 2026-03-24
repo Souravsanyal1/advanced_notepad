@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:get/get.dart';
 import '../services/profile_service.dart';
 import '../services/local_storage_service.dart';
-import '../services/firestore_service.dart';
 import '../services/theme_service.dart';
 import '../services/photo_service.dart';
-
+import '../controllers/note_controller.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -20,53 +20,28 @@ class AppDrawer extends StatefulWidget {
 class _AppDrawerState extends State<AppDrawer> {
   final ProfileService _profileService = ProfileService();
   final LocalStorageService _storageService = LocalStorageService();
-  final FirestoreService _firestoreService = FirestoreService();
   final PhotoService _photoService = PhotoService();
   final ImagePicker _picker = ImagePicker();
+  final NoteController _noteController = Get.find<NoteController>();
+  final ThemeService _themeService = Get.find<ThemeService>();
 
   String? _profileImageUrl;
   String _userName = 'Advanced User';
   String _userEmail = 'premium@advanced.com';
   bool _isUploadingProfile = false;
-  final ThemeService _themeService = ThemeService();
-  List<String> _labels = [];
-
 
   @override
   void initState() {
     super.initState();
     _profileService.addListener(_loadProfileData);
-    _themeService.addListener(_handleThemeChange);
     _loadProfileData();
-    _listenToLabels();
   }
 
   @override
   void dispose() {
     _profileService.removeListener(_loadProfileData);
-    _themeService.removeListener(_handleThemeChange);
     super.dispose();
   }
-
-  void _handleThemeChange() {
-    if (mounted) setState(() {});
-  }
-
-  void _listenToLabels() {
-    _firestoreService.getLabels().listen(
-      (labels) {
-        if (mounted) {
-          setState(() {
-            _labels = labels;
-          });
-        }
-      },
-      onError: (e) {
-        debugPrint('Error listening to labels: $e');
-      },
-    );
-  }
-
 
   Future<void> _loadProfileData() async {
     final url = await _profileService.getProfilePhoto();
@@ -110,7 +85,6 @@ class _AppDrawerState extends State<AppDrawer> {
       final String? savedPath = await _storageService.saveImage(File(image.path), 'profile_photos');
 
       if (savedPath != null) {
-        // Delete old profile photo if it was a local file
         if (_profileImageUrl != null && !_profileImageUrl!.startsWith('http')) {
           await _storageService.deleteImage(_profileImageUrl!);
         }
@@ -280,37 +254,36 @@ class _AppDrawerState extends State<AppDrawer> {
               ],
             ),
           ),
-          _DrawerItem(
+          Obx(() => _DrawerItem(
             icon: Icons.notes_rounded,
             label: 'All Notes',
-            onTap: () => Navigator.pop(context),
-            trailing: StreamBuilder<int>(
-              stream: _firestoreService.getNoteCount(),
-              builder: (context, snapshot) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${snapshot.data ?? 0}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                );
-              },
+            isSelected: _noteController.selectedLabel.value.isEmpty,
+            onTap: () {
+              _noteController.setSelectedLabel(null);
+              Navigator.pop(context);
+            },
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${_noteController.allNotes.length}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
             ),
-          ),
+          )),
           _DrawerItem(
             icon: Icons.favorite_outline_rounded,
             label: 'Favorites',
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/favorites');
+              Get.toNamed('/favorites');
             },
           ),
           _DrawerItem(
@@ -318,7 +291,7 @@ class _AppDrawerState extends State<AppDrawer> {
             label: 'Archive',
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/archive');
+              Get.toNamed('/archive');
             },
           ),
            _DrawerItem(
@@ -326,7 +299,7 @@ class _AppDrawerState extends State<AppDrawer> {
             label: 'Trash',
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/trash');
+              Get.toNamed('/trash');
             },
           ),
           const Divider(),
@@ -335,13 +308,16 @@ class _AppDrawerState extends State<AppDrawer> {
             child: Text('LABELS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
           ),
           // Personal & Work Labels (Dynamic)
-          ..._labels.map((label) => _DrawerItem(
-            icon: Icons.label_outline_rounded,
-            label: label,
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/home', arguments: label);
-            },
+          Obx(() => Column(
+            children: _noteController.labels.map((label) => _DrawerItem(
+              icon: Icons.label_outline_rounded,
+              label: label,
+              isSelected: _noteController.selectedLabel.value == label,
+              onTap: () {
+                _noteController.setSelectedLabel(label);
+                Navigator.pop(context);
+              },
+            )).toList(),
           )),
 
           _DrawerItem(
@@ -351,19 +327,19 @@ class _AppDrawerState extends State<AppDrawer> {
           ),
 
           const Divider(),
-          SwitchListTile(
+          Obx(() => SwitchListTile(
             title: const Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w500)),
             secondary: const Icon(Icons.dark_mode_outlined),
             value: _themeService.isDarkMode,
             onChanged: (value) => _themeService.toggleTheme(),
-          ),
+          )),
           const Divider(),
           _DrawerItem(
             icon: Icons.info_outline,
             label: 'About',
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/about');
+              Get.toNamed('/about');
             },
           ),
           _DrawerItem(
@@ -376,7 +352,6 @@ class _AppDrawerState extends State<AppDrawer> {
             label: 'Update',
             onTap: () => _showUpdateDialog(context),
           ),
-          const Spacer(),
           const Divider(),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -557,32 +532,48 @@ class _AppDrawerState extends State<AppDrawer> {
     );
 
     if (newLabel != null && newLabel.isNotEmpty) {
-      await _firestoreService.addLabel(newLabel);
+      await _noteController.addLabel(newLabel);
     }
   }
 }
-
 
 class _DrawerItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final Widget? trailing;
+  final bool isSelected;
 
   const _DrawerItem({
     required this.icon,
     required this.label,
     required this.onTap,
     this.trailing,
+    this.isSelected = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return ListTile(
-      leading: Icon(icon),
-      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+      leading: Icon(
+        icon, 
+        color: isSelected ? theme.colorScheme.primary : theme.iconTheme.color
+      ),
+      title: Text(
+        label, 
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          color: isSelected ? theme.colorScheme.primary : theme.textTheme.bodyLarge?.color,
+        )
+      ),
       trailing: trailing,
+      selected: isSelected,
+      selectedTileColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
       onTap: onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }
 }

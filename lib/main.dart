@@ -12,9 +12,17 @@ import 'screens/favorites_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/theme_service.dart';
 
+import 'package:get/get.dart';
+import 'controllers/note_controller.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Initialize Services & Controllers
+  Get.put(ThemeService());
+  Get.put(NoteController());
+  
   runApp(const MyApp());
 }
 
@@ -23,26 +31,24 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: ThemeService(),
-      builder: (context, _) {
-        return MaterialApp(
-          title: 'Advanced Notepad',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeService().themeMode,
-          routes: {
-            '/': (context) => const SplashScreen(),
-            '/home': (context) => const HomeScreen(),
-            '/favorites': (context) => const FavoritesScreen(),
-            '/archive': (context) => const ArchiveScreen(),
-            '/trash': (context) => const TrashScreen(),
-            '/about': (context) => const AboutScreen(),
-            '/developer-info': (context) => const DeveloperInfoScreen(),
-          },
-        );
-      },
-    );
+    final themeService = Get.find<ThemeService>();
+    
+    return Obx(() => GetMaterialApp(
+      title: 'Advanced Notepad',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeService.themeMode,
+      initialRoute: '/',
+      getPages: [
+        GetPage(name: '/', page: () => const SplashScreen()),
+        GetPage(name: '/home', page: () => const HomeScreen()),
+        GetPage(name: '/favorites', page: () => const FavoritesScreen()),
+        GetPage(name: '/archive', page: () => const ArchiveScreen()),
+        GetPage(name: '/trash', page: () => const TrashScreen()),
+        GetPage(name: '/about', page: () => const AboutScreen()),
+        GetPage(name: '/developer-info', page: () => const DeveloperInfoScreen()),
+      ],
+    ));
   }
 }

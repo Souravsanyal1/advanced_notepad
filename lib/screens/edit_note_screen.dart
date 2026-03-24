@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import '../models/note.dart';
-import '../services/firestore_service.dart';
 import '../services/local_storage_service.dart';
 import '../services/photo_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io';
+
+import 'dart:ui';
+import 'package:intl/intl.dart';
+import 'package:get/get.dart';
+import '../controllers/note_controller.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class EditNoteScreen extends StatefulWidget {
   final Note? note;
@@ -17,7 +22,7 @@ class EditNoteScreen extends StatefulWidget {
 }
 
 class _EditNoteScreenState extends State<EditNoteScreen> {
-  final FirestoreService _firestoreService = FirestoreService();
+  final NoteController _noteController = Get.find<NoteController>();
   final LocalStorageService _storageService = LocalStorageService();
   final PhotoService _photoService = PhotoService();
   final ImagePicker _picker = ImagePicker();
@@ -32,20 +37,22 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   String? _imageUrl;
   bool _isUploading = false;
   List<String> _selectedLabels = [];
-  List<String> _availableLabels = [];
-
+  bool _isSaving = false;
+  String _lastSaved = '';
+  int _wordCount = 0;
+  int _charCount = 0;
 
   final List<int> _colors = [
     0xFFFFFFFF, // white
-    0xFFF28B82, // red
-    0xFFFBBC04, // orange
-    0xFFFFF475, // yellow
-    0xFFCCFF90, // green
-    0xFFA7FFEB, // teal
-    0xFFCBF0F8, // blue
-    0xFFAECBFA, // dark blue
-    0xFFD7AEFB, // purple
-    0xFFFDCFE8, // pink
+    0xFFF8D7DA, // soft red
+    0xFFFFF3CD, // soft yellow
+    0xFFD4EDDA, // soft green
+    0xFFD1ECF1, // soft teal
+    0xFFCCE5FF, // soft blue
+    0xFFE2E3E5, // soft grey
+    0xFFF3E5F5, // soft purple
+    0xFFFCE4EC, // soft pink
+    0xFFE8F5E9, // mint
   ];
 
   @override
@@ -61,20 +68,27 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       _isDeleted = widget.note!.isDeleted;
       _imageUrl = widget.note!.imageUrl;
       _selectedLabels = List<String>.from(widget.note!.labels);
+      _updateStats();
     }
-    _loadLabels();
+
+    _contentController.addListener(_updateStats);
   }
 
-  void _loadLabels() {
-    _firestoreService.getLabels().listen((labels) {
-      if (mounted) {
-        setState(() {
-          _availableLabels = labels;
-        });
-      }
+  void _updateStats() {
+    final text = _contentController.text.trim();
+    setState(() {
+      _charCount = text.length;
+      _wordCount = text.isEmpty ? 0 : text.split(RegExp(r'\s+')).length;
     });
   }
 
+  @override
+  void dispose() {
+    _contentController.removeListener(_updateStats);
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickAndUploadImage() async {
     try {
@@ -120,12 +134,8 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     }
   }
 
-  void _saveNote() {
-    if (_titleController.text.isEmpty && _contentController.text.isEmpty) {
-      Navigator.pop(context);
-      return;
-    }
-
+  void _saveNote() async {
+    setState(() => _isSaving = true);
     final now = DateTime.now();
     if (widget.note == null) {
       final newNote = Note(
@@ -141,7 +151,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         imageUrl: _imageUrl,
         labels: _selectedLabels,
       );
-      _firestoreService.addNote(newNote);
+      _noteController.addNote(newNote);
     } else {
       final updatedNote = widget.note!.copyWith(
         title: _titleController.text,
@@ -154,9 +164,18 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         imageUrl: _imageUrl,
         labels: _selectedLabels,
       );
-      _firestoreService.updateNote(updatedNote);
+      _noteController.updateNote(updatedNote);
     }
-    Navigator.pop(context);
+    
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+          _lastSaved = DateFormat('jm').format(now);
+        });
+        Navigator.pop(context);
+      }
+    });
   }
 
   void _deleteNote() async {
@@ -180,7 +199,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       );
 
        if (confirmed == true) {
-        await _firestoreService.moveToTrash(widget.note!.id);
+        await _noteController.deleteNote(widget.note!.id);
         if (mounted) Navigator.pop(context);
       }
     }
@@ -188,7 +207,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
 
   void _restoreNote() async {
     if (widget.note != null) {
-      await _firestoreService.restoreFromTrash(widget.note!.id);
+      await _noteController.restoreNote(widget.note!.id);
       if (mounted) Navigator.pop(context);
     }
   }
@@ -217,12 +236,11 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         if (widget.note!.imageUrl != null && !widget.note!.imageUrl!.startsWith('http')) {
           await _storageService.deleteImage(widget.note!.imageUrl!);
         }
-        await _firestoreService.deleteNote(widget.note!.id);
+        await _noteController.deleteNotePermanently(widget.note!.id);
         if (mounted) Navigator.pop(context);
       }
     }
   }
-
 
   Color _getContrastColor() {
     return Color(_selectedColor).computeLuminance() > 0.5
@@ -243,11 +261,16 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
 
     return Scaffold(
       backgroundColor: Color(_selectedColor),
+      extendBody: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
+        title: _isSaving 
+          ? Text('Saving...', style: TextStyle(color: contrastColor.withOpacity(0.6), fontSize: 14))
+          : (_lastSaved.isNotEmpty ? Text('Saved at $_lastSaved', style: TextStyle(color: contrastColor.withOpacity(0.6), fontSize: 14)) : null),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: contrastColor),
+          icon: Icon(Icons.close, color: contrastColor),
           onPressed: () => Navigator.pop(context),
         ),
          actions: _isDeleted
@@ -268,7 +291,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                 IconButton(
                   icon: Icon(
                     _isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                    color: contrastColor,
+                    color: _isPinned ? Colors.blue.shade700 : contrastColor,
                   ),
                   onPressed: () => setState(() => _isPinned = !_isPinned),
                   tooltip: 'Pin note',
@@ -284,285 +307,451 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                 IconButton(
                   icon: Icon(
                     _isArchived ? Icons.archive : Icons.archive_outlined,
-                    color: contrastColor,
+                    color: _isArchived ? Colors.orange.shade700 : contrastColor,
                   ),
                   onPressed: () => setState(() => _isArchived = !_isArchived),
                   tooltip: 'Archive note',
                 ),
-                IconButton(
-                  icon: Icon(Icons.add_photo_alternate_outlined, color: contrastColor),
-                  onPressed: _isUploading ? null : _pickAndUploadImage,
-                  tooltip: 'Add image',
-                ),
-                if (widget.note != null)
-                  IconButton(
-                    icon: Icon(Icons.delete_outline, color: contrastColor),
-                    onPressed: _deleteNote,
-                    tooltip: 'Delete note',
-                  ),
                 const SizedBox(width: 8),
               ],
-
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-             child: TextField(
-              controller: _titleController,
-              cursorColor: contrastColor,
-              readOnly: _isDeleted,
-              decoration: InputDecoration(
-
-                hintText: 'Title',
-                border: InputBorder.none,
-                hintStyle: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: hintColor,
-                ),
-              ),
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: contrastColor,
-              ),
-            ),
-          ),
-          if (_isUploading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: Center(child: CircularProgressIndicator(color: Colors.black54)),
-            ),
-          if (_imageUrl != null && !_isUploading)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: _imageUrl!.startsWith('http')
-                        ? CachedNetworkImage(
-                            imageUrl: _imageUrl!,
-                            placeholder: (context, url) => Container(
-                              height: 200,
-                              color: Colors.black12,
-                              child: const Center(child: CircularProgressIndicator()),
-                            ),
-                            errorWidget: (context, url, error) => const Icon(Icons.error),
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                          )
-                        : (File(_imageUrl!).existsSync()
-                            ? Image.file(
-                                File(_imageUrl!),
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
-                              )
-                            : Container(
-                                height: 200,
-                                color: Colors.black12,
-                                child: const Center(child: Icon(Icons.image_not_supported)),
-                              )),
+          SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 150),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                  child: TextField(
+                    controller: _titleController,
+                    cursorColor: contrastColor,
+                    readOnly: _isDeleted,
+                    decoration: InputDecoration(
+                      hintText: 'Title',
+                      border: InputBorder.none,
+                      hintStyle: GoogleFonts.poppins(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: hintColor,
+                      ),
+                    ),
+                    style: GoogleFonts.poppins(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: contrastColor,
+                    ),
                   ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: CircleAvatar(
-                      backgroundColor: Colors.black54,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () async {
-                          if (_imageUrl != null && !_imageUrl!.startsWith('http')) {
-                            await _storageService.deleteImage(_imageUrl!);
-                          }
-                          setState(() => _imageUrl = null);
-                        },
+                ),
+                if (widget.note != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                    child: Text(
+                      'Edited: ${DateFormat('MMM d, yyyy • hh:mm a').format(widget.note!.updatedAt)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: hintColor,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-          if (widget.note != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Last edited: ${widget.note!.updatedAt.day}/${widget.note!.updatedAt.month}/${widget.note!.updatedAt.year}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: hintColor,
-                    fontStyle: FontStyle.italic,
+                if (_isUploading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(child: CircularProgressIndicator(color: Colors.black54)),
                   ),
-                ),
-              ),
-            ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-               child: TextField(
-                controller: _contentController,
-                maxLines: null,
-                cursorColor: contrastColor,
-                readOnly: _isDeleted,
-                decoration: InputDecoration(
-
-                  hintText: 'Type something...',
-                  border: InputBorder.none,
-                  hintStyle: TextStyle(fontSize: 18, color: hintColor),
-                ),
-                style: TextStyle(
-                  fontSize: 18,
-                  height: 1.6,
-                  color: contrastColor,
-                ),
-              ),
-            ),
-          ),
-           if (!_isDeleted)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: Color(_selectedColor).computeLuminance() > 0.5 ? 0.3 : 0.1),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
-                  )
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _colors.map((colorValue) {
-                        final isSelected = _selectedColor == colorValue;
-                        return GestureDetector(
-                          onTap: () => setState(() => _selectedColor = colorValue),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: isSelected ? 50 : 40,
-                            height: isSelected ? 50 : 40,
-                            margin: const EdgeInsets.symmetric(horizontal: 6),
-                            decoration: BoxDecoration(
-                              color: Color(colorValue),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isSelected ? Colors.black : Colors.black12,
-                                width: isSelected ? 3 : 1,
-                              ),
-                              boxShadow: [
-                                if (isSelected)
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.2),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  )
-                              ],
-                            ),
-                            child: isSelected
-                                ? const Icon(Icons.check, color: Colors.black, size: 20)
-                                : null,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                   const SizedBox(height: 16),
-                  if (_availableLabels.isNotEmpty) ...[
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Labels',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: contrastColor.withValues(alpha: 0.7),
+                if (_imageUrl != null && !_isUploading)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: _imageUrl!.startsWith('http')
+                              ? CachedNetworkImage(
+                                  imageUrl: _imageUrl!,
+                                  placeholder: (context, url) => Container(
+                                    height: 200,
+                                    color: Colors.black12,
+                                    child: const Center(child: CircularProgressIndicator()),
+                                  ),
+                                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                )
+                              : (File(_imageUrl!).existsSync()
+                                  ? Image.file(
+                                      File(_imageUrl!),
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+                                    )
+                                  : Container(
+                                      height: 200,
+                                      color: Colors.black12,
+                                      child: const Center(child: Icon(Icons.image_not_supported)),
+                                    )),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: _showCreateLabelDialog,
-                        icon: Icon(Icons.add, size: 16, color: contrastColor),
-                        label: Text('New Label', style: TextStyle(fontSize: 12, color: contrastColor)),
-                        style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    SizedBox(
-                      width: double.infinity,
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: _availableLabels.map((label) {
-                          final isSelected = _selectedLabels.contains(label);
-                          return FilterChip(
-                            label: Text(label, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : contrastColor)),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedLabels.add(label);
-                                } else {
-                                  _selectedLabels.remove(label);
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: CircleAvatar(
+                            backgroundColor: Colors.black54,
+                            child: IconButton(
+                              icon: const Icon(Icons.close, color: Colors.white),
+                              onPressed: () async {
+                                if (_imageUrl != null && !_imageUrl!.startsWith('http')) {
+                                  await _storageService.deleteImage(_imageUrl!);
                                 }
-                              });
-                            },
-                            selectedColor: Colors.black87,
-                            checkmarkColor: Colors.white,
-                            backgroundColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              side: BorderSide(color: isSelected ? Colors.black87 : contrastColor.withValues(alpha: 0.3)),
+                                setState(() => _imageUrl = null);
+                              },
                             ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  const SizedBox(height: 20),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton.icon(
-                      onPressed: _saveNote,
-                      icon: const Icon(Icons.check_circle_outline, size: 24),
-                      label: const Text(
-                        'Save Note',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black87,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                          ),
                         ),
-                        elevation: 4,
-                      ),
+                      ],
                     ),
                   ),
-                ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: TextField(
+                    controller: _contentController,
+                    maxLines: null,
+                    cursorColor: contrastColor,
+                    readOnly: _isDeleted,
+                    decoration: InputDecoration(
+                      hintText: 'Start writing...',
+                      border: InputBorder.none,
+                      hintStyle: GoogleFonts.outfit(fontSize: 18, color: hintColor),
+                    ),
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      height: 1.6,
+                      color: contrastColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!_isDeleted)
+            _buildGlassToolbar(contrastColor, hintColor),
+          
+          if (_isDeleted)
+             Positioned(
+              bottom: 40,
+              left: 20,
+              right: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.red, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'This note is in Trash.',
+                        style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+        ],
+      ),
+      floatingActionButton: _isDeleted ? null : FloatingActionButton.extended(
+        onPressed: _saveNote,
+        backgroundColor: contrastColor,
+        foregroundColor: Color(_selectedColor),
+        icon: const Icon(Icons.check),
+        label: const Text('Save'),
+      ),
+    );
+  }
 
+  Widget _buildGlassToolbar(Color contrastColor, Color hintColor) {
+    return Positioned(
+      bottom: 20,
+      left: 20,
+      right: 20,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            decoration: BoxDecoration(
+              color: contrastColor.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: contrastColor.withOpacity(0.1),
+                width: 1.5,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '$_wordCount words | $_charCount chars',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: contrastColor.withOpacity(0.6),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => _showColorPicker(contrastColor),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: contrastColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: Color(_selectedColor),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: contrastColor.withOpacity(0.2)),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Icon(Icons.palette_outlined, size: 14, color: contrastColor),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildToolbarAction(
+                      Icons.add_photo_alternate_rounded,
+                      'Image',
+                      contrastColor,
+                      _isUploading ? null : _pickAndUploadImage,
+                    ),
+                    _buildToolbarAction(
+                      Icons.label_outline_rounded,
+                      'Labels',
+                      contrastColor,
+                      () => _showLabelPicker(contrastColor),
+                    ),
+                    if (widget.note != null)
+                      _buildToolbarAction(
+                        Icons.delete_outline_rounded,
+                        'Delete',
+                        Colors.red.withOpacity(0.8),
+                        _deleteNote,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToolbarAction(IconData icon, String label, Color color, VoidCallback? onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: color.withOpacity(0.7),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  void _showCreateLabelDialog() async {
+  void _showColorPicker(Color contrastColor) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Choose Color',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _colors.map((colorValue) {
+                  final isSelected = _selectedColor == colorValue;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => _selectedColor = colorValue);
+                      Navigator.pop(context);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 50,
+                      height: 50,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: Color(colorValue),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected ? Colors.blue : Colors.black12,
+                          width: isSelected ? 3 : 1,
+                        ),
+                        boxShadow: [
+                          if (isSelected)
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.2),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            )
+                        ],
+                      ),
+                      child: isSelected
+                          ? const Icon(Icons.check, color: Colors.blue)
+                          : null,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLabelPicker(Color contrastColor) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(
+            top: 24,
+            left: 24,
+            right: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Labels',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () async {
+                      final newLabel = await _showCreateLabelDialogInline();
+                      if (newLabel != null) {
+                        setModalState(() {});
+                      }
+                    },
+                    icon: const Icon(Icons.add_circle_outline),
+                    tooltip: 'New Label',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Obx(() {
+                final availableLabels = _noteController.labels;
+                if (availableLabels.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text('No labels created yet.'),
+                    ),
+                  );
+                }
+                return Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: availableLabels.map((label) {
+                    final isSelected = _selectedLabels.contains(label);
+                    return FilterChip(
+                      label: Text(label),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedLabels.add(label);
+                          } else {
+                            _selectedLabels.remove(label);
+                          }
+                        });
+                        setModalState(() {});
+                      },
+                      selectedColor: Colors.blue.withOpacity(0.2),
+                      checkmarkColor: Colors.blue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    );
+                  }).toList(),
+                );
+              }),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<String?> _showCreateLabelDialogInline() async {
     final controller = TextEditingController();
     final newLabel = await showDialog<String>(
       context: context,
@@ -573,14 +762,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
           autofocus: true,
           decoration: const InputDecoration(
             hintText: 'Label name',
-            border: OutlineInputBorder(),
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
             child: const Text('Create'),
@@ -590,12 +775,14 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     );
 
     if (newLabel != null && newLabel.isNotEmpty) {
-      await _firestoreService.addLabel(newLabel);
+      await _noteController.addLabel(newLabel);
       setState(() {
         if (!_selectedLabels.contains(newLabel)) {
           _selectedLabels.add(newLabel);
         }
       });
+      return newLabel;
     }
+    return null;
   }
 }
