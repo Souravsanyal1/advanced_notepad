@@ -72,7 +72,7 @@ class _AppDrawerState extends State<AppDrawer> {
       }
     } catch (e) {
       setState(() => _isUploadingProfile = false);
-      print('Error updating profile photo: $e');
+      debugPrint('Error updating profile: $e');
     }
   }
 
@@ -144,7 +144,7 @@ class _AppDrawerState extends State<AppDrawer> {
                     right: 0,
                     child: Container(
                       padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: Colors.black54,
                         shape: BoxShape.circle,
                       ),
@@ -300,7 +300,7 @@ class _AppDrawerState extends State<AppDrawer> {
           children: [
             Icon(Icons.system_update, color: Colors.blue),
             SizedBox(width: 10),
-            const Text('App Update'),
+            Text('App Update'),
           ],
         ),
         content: const Column(

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import '../models/note.dart';
 import '../services/firestore_service.dart';
 import '../services/cloudinary_service.dart';
@@ -77,7 +78,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       }
     } catch (e) {
       setState(() => _isUploading = false);
-      print('Error picking/uploading image: $e');
+      debugPrint('Error picking/uploading image: $e');
     }
   }
 
