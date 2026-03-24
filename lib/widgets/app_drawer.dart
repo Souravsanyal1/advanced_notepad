@@ -4,9 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/profile_service.dart';
-import '../services/firebase_storage_service.dart';
+import '../services/local_storage_service.dart';
 import '../services/firestore_service.dart';
 import '../services/theme_service.dart';
+import '../services/photo_service.dart';
 
 
 class AppDrawer extends StatefulWidget {
@@ -18,8 +19,9 @@ class AppDrawer extends StatefulWidget {
 
 class _AppDrawerState extends State<AppDrawer> {
   final ProfileService _profileService = ProfileService();
-  final FirebaseStorageService _storageService = FirebaseStorageService();
+  final LocalStorageService _storageService = LocalStorageService();
   final FirestoreService _firestoreService = FirestoreService();
+  final PhotoService _photoService = PhotoService();
   final ImagePicker _picker = ImagePicker();
 
   String? _profileImageUrl;
@@ -82,15 +84,36 @@ class _AppDrawerState extends State<AppDrawer> {
       );
       if (image == null) return;
 
+      final bool hasPermission = await _photoService.requestPermissions();
+      if (!hasPermission) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Gallery permission is required to update profile photo.'),
+              action: SnackBarAction(
+                label: 'Settings',
+                onPressed: () => _photoService.openSettings(),
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
       setState(() => _isUploadingProfile = true);
 
-      final String? uploadedUrl = await _storageService.uploadImage(File(image.path), 'profile_photos');
+      final String? savedPath = await _storageService.saveImage(File(image.path), 'profile_photos');
 
-      if (uploadedUrl != null) {
-        await _profileService.setProfilePhoto(uploadedUrl);
+      if (savedPath != null) {
+        // Delete old profile photo if it was a local file
+        if (_profileImageUrl != null && !_profileImageUrl!.startsWith('http')) {
+          await _storageService.deleteImage(_profileImageUrl!);
+        }
+
+        await _profileService.setProfilePhoto(savedPath);
         if (mounted) {
           setState(() {
-            _profileImageUrl = uploadedUrl;
+            _profileImageUrl = savedPath;
             _isUploadingProfile = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
@@ -193,11 +216,15 @@ class _AppDrawerState extends State<AppDrawer> {
                     radius: 40,
                     backgroundColor: Colors.white24,
                     backgroundImage: _profileImageUrl != null
-                        ? CachedNetworkImageProvider(_profileImageUrl!)
+                        ? (_profileImageUrl!.startsWith('http')
+                            ? CachedNetworkImageProvider(_profileImageUrl!)
+                            : FileImage(File(_profileImageUrl!)) as ImageProvider)
                         : null,
                     child: _profileImageUrl == null && !_isUploadingProfile
                         ? const Icon(Icons.person, size: 42, color: Colors.white)
-                        : null,
+                        : (_profileImageUrl != null && !_profileImageUrl!.startsWith('http') && !File(_profileImageUrl!).existsSync()
+                            ? const Icon(Icons.person, size: 42, color: Colors.white)
+                            : null),
                   ),
                   if (_isUploadingProfile)
                     const Center(

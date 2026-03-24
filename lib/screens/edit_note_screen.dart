@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/note.dart';
 import '../services/firestore_service.dart';
-import '../services/firebase_storage_service.dart';
+import '../services/local_storage_service.dart';
+import '../services/photo_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io';
@@ -17,7 +18,8 @@ class EditNoteScreen extends StatefulWidget {
 
 class _EditNoteScreenState extends State<EditNoteScreen> {
   final FirestoreService _firestoreService = FirestoreService();
-  final FirebaseStorageService _storageService = FirebaseStorageService();
+  final LocalStorageService _storageService = LocalStorageService();
+  final PhotoService _photoService = PhotoService();
   final ImagePicker _picker = ImagePicker();
   
   final _titleController = TextEditingController();
@@ -74,23 +76,39 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
 
   Future<void> _pickAndUploadImage() async {
     try {
+      final bool hasPermission = await _photoService.requestPermissions();
+      if (!hasPermission) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Gallery permission is required to add images.'),
+              action: SnackBarAction(
+                label: 'Settings',
+                onPressed: () => _photoService.openSettings(),
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
       if (image == null) return;
 
       setState(() => _isUploading = true);
 
-      final String? uploadedUrl = await _storageService.uploadImage(File(image.path), 'note_images');
+      final String? savedPath = await _storageService.saveImage(File(image.path), 'note_images');
       
-      if (uploadedUrl != null) {
+      if (savedPath != null) {
         setState(() {
-          _imageUrl = uploadedUrl;
+          _imageUrl = savedPath;
           _isUploading = false;
         });
       } else {
         setState(() => _isUploading = false);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to upload image. Please check your Firebase Storage setup.')),
+            const SnackBar(content: Text('Failed to save image locally.')),
           );
         }
       }
@@ -192,6 +210,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       );
 
       if (confirmed == true) {
+        if (widget.note!.imageUrl != null && !widget.note!.imageUrl!.startsWith('http')) {
+          await _storageService.deleteImage(widget.note!.imageUrl!);
+        }
         await _firestoreService.deleteNote(widget.note!.id);
         if (mounted) Navigator.pop(context);
       }
@@ -308,17 +329,30 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(20),
-                    child: CachedNetworkImage(
-                      imageUrl: _imageUrl!,
-                      placeholder: (context, url) => Container(
-                        height: 200,
-                        color: Colors.black12,
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                      errorWidget: (context, url, error) => const Icon(Icons.error),
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                    ),
+                    child: _imageUrl!.startsWith('http')
+                        ? CachedNetworkImage(
+                            imageUrl: _imageUrl!,
+                            placeholder: (context, url) => Container(
+                              height: 200,
+                              color: Colors.black12,
+                              child: const Center(child: CircularProgressIndicator()),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(Icons.error),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                          )
+                        : (File(_imageUrl!).existsSync()
+                            ? Image.file(
+                                File(_imageUrl!),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+                              )
+                            : Container(
+                                height: 200,
+                                color: Colors.black12,
+                                child: const Center(child: Icon(Icons.image_not_supported)),
+                              )),
                   ),
                   Positioned(
                     top: 10,
@@ -327,7 +361,12 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                       backgroundColor: Colors.black54,
                       child: IconButton(
                         icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => setState(() => _imageUrl = null),
+                        onPressed: () async {
+                          if (_imageUrl != null && !_imageUrl!.startsWith('http')) {
+                            await _storageService.deleteImage(_imageUrl!);
+                          }
+                          setState(() => _imageUrl = null);
+                        },
                       ),
                     ),
                   ),

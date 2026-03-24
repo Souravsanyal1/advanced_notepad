@@ -6,6 +6,7 @@ import 'screens/home_screen.dart';
 import 'screens/trash_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/splash_screen.dart';
+import 'screens/developer_info_screen.dart';
 
 import 'theme/app_theme.dart';
 import 'services/theme_service.dart';
@@ -37,8 +38,7 @@ class MyApp extends StatelessWidget {
             '/archive': (context) => const ArchiveScreen(),
             '/trash': (context) => const TrashScreen(),
             '/about': (context) => const AboutScreen(),
-
-
+            '/developer-info': (context) => const DeveloperInfoScreen(),
           },
         );
       },

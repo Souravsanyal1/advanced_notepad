@@ -38,21 +38,21 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Version 1.0.0+1',
+              'Version 1.0.1+2',
               style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
             ),
             const SizedBox(height: 32),
             _buildInfoCard(
               context,
               title: 'Our Mission',
-              content: 'To provide a seamless, beautiful, and powerful note-taking experience that keeps your thoughts organized and synchronized across the cloud.',
+              content: 'To provide a seamless, beautiful, and powerful note-taking experience that keeps your thoughts organized and accessible locally on your device.',
               icon: Icons.lightbulb_outline,
             ),
             const SizedBox(height: 16),
             _buildInfoCard(
               context,
               title: 'Premium Features',
-              content: 'Real-time Firebase sync, Cloudinary image attachments, modern staggered UI, and personalized user profiles.',
+              content: 'Offline-first architecture, local image attachments, advanced gallery access, modern staggered UI, and personalized user profiles.',
               icon: Icons.star_outline,
             ),
             const SizedBox(height: 16),
@@ -61,6 +61,7 @@ class AboutScreen extends StatelessWidget {
               title: 'Developed By',
               content: 'Built with ❤️ by Sourav Sanyal for the modern thinker.',
               icon: Icons.code,
+              onTap: () => Navigator.pushNamed(context, '/developer-info'),
             ),
             const SizedBox(height: 48),
             Text(
@@ -73,10 +74,9 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoCard(BuildContext context, {required String title, required String content, required IconData icon}) {
+  Widget _buildInfoCard(BuildContext context, {required String title, required String content, required IconData icon, VoidCallback? onTap}) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
@@ -89,28 +89,52 @@ class AboutScreen extends StatelessWidget {
           )
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: theme.colorScheme.primary),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: theme.colorScheme.primary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      content,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+                    ),
+                    if (onTap != null) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Text(
+                            'View Profile',
+                            style: TextStyle(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.arrow_forward_rounded, size: 14, color: theme.colorScheme.primary),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  content,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

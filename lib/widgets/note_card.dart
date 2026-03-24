@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/note.dart';
+import 'dart:io';
 
 class NoteCard extends StatelessWidget {
   final Note note;
@@ -41,19 +42,33 @@ class NoteCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 12.0),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: CachedNetworkImage(
-                      imageUrl: note.imageUrl!,
-                      placeholder: (context, url) => Container(
-                        height: 120,
-                        color: Colors.black.withValues(alpha: 0.05),
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                    ),
+                    child: note.imageUrl!.startsWith('http')
+                        ? CachedNetworkImage(
+                            imageUrl: note.imageUrl!,
+                            placeholder: (context, url) => Container(
+                              height: 120,
+                              color: Colors.black.withValues(alpha: 0.05),
+                              child: const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                          )
+                        : (File(note.imageUrl!).existsSync()
+                            ? Image.file(
+                                File(note.imageUrl!),
+                                height: 120,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image_outlined),
+                              )
+                            : Container(
+                                height: 120,
+                                color: Colors.black.withValues(alpha: 0.05),
+                                child: const Center(child: Icon(Icons.image_not_supported)),
+                              )),
                   ),
                 ),
               Row(

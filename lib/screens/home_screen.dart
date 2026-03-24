@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:animations/animations.dart';
@@ -84,7 +85,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     radius: 18,
                     backgroundColor: theme.colorScheme.primaryContainer,
                     backgroundImage: _profileImageUrl != null
-                        ? CachedNetworkImageProvider(_profileImageUrl!)
+                        ? (_profileImageUrl!.startsWith('http')
+                            ? CachedNetworkImageProvider(_profileImageUrl!)
+                            : FileImage(File(_profileImageUrl!)) as ImageProvider)
                         : null,
                     child: _profileImageUrl == null
                         ? Icon(Icons.person, color: theme.colorScheme.onPrimaryContainer, size: 20)
