@@ -51,10 +51,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       drawer: const AppDrawer(),
       body: UpgradeAlert(
-        upgrader: Upgrader(
-          dialogStyle: UpgradeDialogStyle.material,
-          showIgnore: false,
-        ),
+        upgrader: Upgrader(),
+        dialogStyle: UpgradeDialogStyle.material,
+        showIgnore: false,
         child: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
@@ -244,6 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
+      ),
       ),
       floatingActionButton: OpenContainer(
         transitionDuration: const Duration(milliseconds: 500),
