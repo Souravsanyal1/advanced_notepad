@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/note.dart';
 
 class NoteCard extends StatelessWidget {
@@ -35,6 +36,26 @@ class NoteCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (note.imageUrl != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: CachedNetworkImage(
+                      imageUrl: note.imageUrl!,
+                      placeholder: (context, url) => Container(
+                        height: 120,
+                        color: Colors.black.withValues(alpha: 0.05),
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    ),
+                  ),
+                ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

@@ -10,6 +10,7 @@ class Note {
 
   final bool isPinned;
   final bool isArchived;
+  final String? imageUrl;
 
   Note({
     required this.id,
@@ -20,6 +21,7 @@ class Note {
     required this.updatedAt,
     this.isPinned = false,
     this.isArchived = false,
+    this.imageUrl,
   });
 
   factory Note.fromFirestore(DocumentSnapshot doc) {
@@ -33,6 +35,7 @@ class Note {
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
       isPinned: data['isPinned'] ?? false,
       isArchived: data['isArchived'] ?? false,
+      imageUrl: data['imageUrl'],
     );
   }
 
@@ -45,6 +48,7 @@ class Note {
       'updatedAt': Timestamp.fromDate(updatedAt),
       'isPinned': isPinned,
       'isArchived': isArchived,
+      'imageUrl': imageUrl,
     };
   }
 
@@ -55,6 +59,7 @@ class Note {
     DateTime? updatedAt,
     bool? isPinned,
     bool? isArchived,
+    String? imageUrl,
   }) {
     return Note(
       id: id,
@@ -65,6 +70,7 @@ class Note {
       updatedAt: updatedAt ?? this.updatedAt,
       isPinned: isPinned ?? this.isPinned,
       isArchived: isArchived ?? this.isArchived,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 }

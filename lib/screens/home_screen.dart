@@ -6,6 +6,8 @@ import '../models/note.dart';
 import '../services/firestore_service.dart';
 import '../widgets/note_card.dart';
 import '../widgets/app_drawer.dart';
+import '../services/profile_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'edit_note_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,7 +19,22 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  final ProfileService _profileService = ProfileService();
   String _searchQuery = '';
+  String? _profileImageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final url = await _profileService.getProfilePhoto();
+    if (mounted) {
+      setState(() => _profileImageUrl = url);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +53,22 @@ class _HomeScreenState extends State<HomeScreen> {
             forceElevated: innerBoxIsScrolled,
             actions: [
               IconButton(onPressed: () {}, icon: const Icon(Icons.sort)),
+              GestureDetector(
+                onTap: () => Scaffold.of(context).openDrawer(),
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    backgroundImage: _profileImageUrl != null
+                        ? CachedNetworkImageProvider(_profileImageUrl!)
+                        : null,
+                    child: _profileImageUrl == null
+                        ? Icon(Icons.person, color: theme.colorScheme.onPrimaryContainer, size: 20)
+                        : null,
+                  ),
+                ),
+              ),
             ],
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(70),

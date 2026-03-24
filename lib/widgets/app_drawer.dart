@@ -1,55 +1,194 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../services/profile_service.dart';
+import '../services/cloudinary_service.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
 
   @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  final ProfileService _profileService = ProfileService();
+  final CloudinaryService _cloudinaryService = CloudinaryService();
+  final ImagePicker _picker = ImagePicker();
+
+  String? _profileImageUrl;
+  String _userName = 'Advanced User';
+  bool _isUploadingProfile = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    final url = await _profileService.getProfilePhoto();
+    final name = await _profileService.getUserName();
+    if (mounted) {
+      setState(() {
+        _profileImageUrl = url;
+        _userName = name;
+      });
+    }
+  }
+
+  Future<void> _pickAndUploadProfilePhoto() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 50,
+      );
+      if (image == null) return;
+
+      setState(() => _isUploadingProfile = true);
+
+      final String? uploadedUrl = await _cloudinaryService.uploadImage(File(image.path));
+
+      if (uploadedUrl != null) {
+        await _profileService.setProfilePhoto(uploadedUrl);
+        if (mounted) {
+          setState(() {
+            _profileImageUrl = uploadedUrl;
+            _isUploadingProfile = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile photo updated successfully!')),
+          );
+        }
+      } else {
+        setState(() => _isUploadingProfile = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to upload profile photo.')),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => _isUploadingProfile = false);
+      print('Error updating profile photo: $e');
+    }
+  }
+
+  void _editName() async {
+    final controller = TextEditingController(text: _userName);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Name'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: 'Enter your name'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (newName != null && newName.isNotEmpty) {
+      await _profileService.setUserName(newName);
+      setState(() => _userName = newName);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Drawer(
       child: Column(
         children: [
-          DrawerHeader(
+          UserAccountsDrawerHeader(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.secondary,
+                  theme.colorScheme.primary,
+                  theme.colorScheme.secondary,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            currentAccountPicture: GestureDetector(
+              onTap: _isUploadingProfile ? null : _pickAndUploadProfilePhoto,
+              child: Stack(
                 children: [
-                   const Icon(Icons.note_alt, size: 60, color: Colors.white),
-                   const SizedBox(height: 10),
-                   Text(
-                    'Advanced Notepad',
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  CircleAvatar(
+                    radius: 36,
+                    backgroundColor: Colors.white24,
+                    backgroundImage: _profileImageUrl != null
+                        ? CachedNetworkImageProvider(_profileImageUrl!)
+                        : null,
+                    child: _profileImageUrl == null && !_isUploadingProfile
+                        ? const Icon(Icons.person, size: 40, color: Colors.white)
+                        : null,
+                  ),
+                  if (_isUploadingProfile)
+                    const Center(
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
                     ),
                   ),
                 ],
               ),
             ),
+            accountName: Row(
+              children: [
+                Text(
+                  _userName,
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 16, color: Colors.white70),
+                  onPressed: _editName,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+            accountEmail: const Text('Premium Member'),
           ),
           _DrawerItem(
-            icon: Icons.info_outline,
-            label: 'About',
-            onTap: () => _showAboutDialog(context),
+            icon: Icons.notes,
+            label: 'All Notes',
+            onTap: () => Navigator.pop(context),
           ),
           _DrawerItem(
             icon: Icons.archive_outlined,
             label: 'Archive',
             onTap: () {
-              Navigator.pop(context); // Close drawer
+              Navigator.pop(context);
               Navigator.pushNamed(context, '/archive');
             },
+          ),
+          const Divider(),
+          _DrawerItem(
+            icon: Icons.info_outline,
+            label: 'About',
+            onTap: () => _showAboutDialog(context),
           ),
           _DrawerItem(
             icon: Icons.favorite_border,
@@ -68,7 +207,7 @@ class AppDrawer extends StatelessWidget {
             child: Text(
               'App Version: 1.0.0+1',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 fontSize: 12,
               ),
             ),
@@ -86,7 +225,7 @@ class AppDrawer extends StatelessWidget {
       applicationIcon: const Icon(Icons.note_alt, size: 40, color: Colors.blue),
       children: [
         const Text(
-          'An advanced notepad application built with Flutter and Firebase, featuring real-time synchronization, premium UI, and easy note management.',
+          'An advanced notepad application built with Flutter and Firebase, featuring real-time synchronization, premium UI, and Cloudinary image support.',
         ),
       ],
     );
@@ -161,7 +300,7 @@ class AppDrawer extends StatelessWidget {
           children: [
             Icon(Icons.system_update, color: Colors.blue),
             SizedBox(width: 10),
-            Text('App Update'),
+            const Text('App Update'),
           ],
         ),
         content: const Column(

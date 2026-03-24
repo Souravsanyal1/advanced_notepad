@@ -1,6 +1,9 @@
-import 'package:flutter/material.dart';
 import '../models/note.dart';
 import '../services/firestore_service.dart';
+import '../services/cloudinary_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:io';
 
 class EditNoteScreen extends StatefulWidget {
   final Note? note;
@@ -13,11 +16,16 @@ class EditNoteScreen extends StatefulWidget {
 
 class _EditNoteScreenState extends State<EditNoteScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  final CloudinaryService _cloudinaryService = CloudinaryService();
+  final ImagePicker _picker = ImagePicker();
+  
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   int _selectedColor = 0xFFFFFFFF; 
   bool _isPinned = false;
   bool _isArchived = false;
+  String? _imageUrl;
+  bool _isUploading = false;
 
   final List<int> _colors = [
     0xFFFFFFFF, // white
@@ -41,6 +49,35 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       _selectedColor = widget.note!.color;
       _isPinned = widget.note!.isPinned;
       _isArchived = widget.note!.isArchived;
+      _imageUrl = widget.note!.imageUrl;
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image == null) return;
+
+      setState(() => _isUploading = true);
+
+      final String? uploadedUrl = await _cloudinaryService.uploadImage(File(image.path));
+      
+      if (uploadedUrl != null) {
+        setState(() {
+          _imageUrl = uploadedUrl;
+          _isUploading = false;
+        });
+      } else {
+        setState(() => _isUploading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to upload image. Please check your Cloudinary setup.')),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => _isUploading = false);
+      print('Error picking/uploading image: $e');
     }
   }
 
@@ -61,6 +98,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         updatedAt: now,
         isPinned: _isPinned,
         isArchived: _isArchived,
+        imageUrl: _imageUrl,
       );
       _firestoreService.addNote(newNote);
     } else {
@@ -71,6 +109,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         updatedAt: now,
         isPinned: _isPinned,
         isArchived: _isArchived,
+        imageUrl: _imageUrl,
       );
       _firestoreService.updateNote(updatedNote);
     }
@@ -147,6 +186,11 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
             onPressed: () => setState(() => _isArchived = !_isArchived),
             tooltip: 'Archive note',
           ),
+          IconButton(
+            icon: Icon(Icons.add_photo_alternate_outlined, color: contrastColor),
+            onPressed: _isUploading ? null : _pickAndUploadImage,
+            tooltip: 'Add image',
+          ),
           if (widget.note != null)
             IconButton(
               icon: Icon(Icons.delete_outline, color: contrastColor),
@@ -179,6 +223,44 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
               ),
             ),
           ),
+          if (_isUploading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(child: CircularProgressIndicator(color: Colors.black54)),
+            ),
+          if (_imageUrl != null && !_isUploading)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: CachedNetworkImage(
+                      imageUrl: _imageUrl!,
+                      placeholder: (context, url) => Container(
+                        height: 200,
+                        color: Colors.black12,
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (context, url, error) => const Icon(Icons.error),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.black54,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => setState(() => _imageUrl = null),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (widget.note != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
