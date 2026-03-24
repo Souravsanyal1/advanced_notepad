@@ -149,7 +149,8 @@ class _AppDrawerState extends State<AppDrawer> {
     final theme = Theme.of(context);
 
     return Drawer(
-      child: Column(
+      child: ListView(
+        padding: EdgeInsets.zero,
         children: [
           UserAccountsDrawerHeader(
             decoration: BoxDecoration(
