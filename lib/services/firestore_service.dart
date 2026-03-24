@@ -41,8 +41,11 @@ class FirestoreService {
   // Label Operations (Dynamic & Combined)
   Stream<List<String>> getLabels() {
     final explicitLabelsStream = _labelsCollection.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => doc.get('name') as String).toList();
-    });
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return (data['name'] ?? data['label'] ?? 'Untitled').toString();
+      }).toList();
+    }).startWith([]);
 
     final noteLabelsStream = _notesCollection
         .where('isDeleted', isEqualTo: false)
@@ -50,7 +53,8 @@ class FirestoreService {
         .map((snapshot) {
       final Set<String> allLabels = {};
       for (var doc in snapshot.docs) {
-        final List<dynamic>? labels = doc.get('labels') as List<dynamic>?;
+        final data = doc.data() as Map<String, dynamic>;
+        final List<dynamic>? labels = data['labels'] as List<dynamic>?;
         if (labels != null) {
           for (var label in labels) {
             allLabels.add(label.toString());
@@ -58,7 +62,7 @@ class FirestoreService {
         }
       }
       return allLabels.toList();
-    });
+    }).startWith([]);
 
     return Rx.combineLatest2<List<String>, List<String>, List<String>>(
       explicitLabelsStream,

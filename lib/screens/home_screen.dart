@@ -304,8 +304,8 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, snapshot) {
         final labels = ['All', ...(snapshot.data ?? [])];
         return Container(
-          height: 100, // Increased height for better spacing
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          height: 70, // Sleeker height
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),

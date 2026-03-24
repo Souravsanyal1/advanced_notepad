@@ -53,13 +53,18 @@ class _AppDrawerState extends State<AppDrawer> {
   }
 
   void _listenToLabels() {
-    _firestoreService.getLabels().listen((labels) {
-      if (mounted) {
-        setState(() {
-          _labels = labels;
-        });
-      }
-    });
+    _firestoreService.getLabels().listen(
+      (labels) {
+        if (mounted) {
+          setState(() {
+            _labels = labels;
+          });
+        }
+      },
+      onError: (e) {
+        debugPrint('Error listening to labels: $e');
+      },
+    );
   }
 
 
