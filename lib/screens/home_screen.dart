@@ -8,6 +8,7 @@ import '../widgets/note_card.dart';
 import '../widgets/app_drawer.dart';
 import '../services/profile_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:upgrader/upgrader.dart';
 import 'edit_note_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,7 +27,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _profileService.addListener(_loadProfile);
     _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    _profileService.removeListener(_loadProfile);
+    super.dispose();
   }
 
   Future<void> _loadProfile() async {
@@ -42,7 +50,12 @@ class _HomeScreenState extends State<HomeScreen> {
     
     return Scaffold(
       drawer: const AppDrawer(),
-      body: NestedScrollView(
+      body: UpgradeAlert(
+        upgrader: Upgrader(
+          dialogStyle: UpgradeDialogStyle.material,
+          showIgnore: false,
+        ),
+        child: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
             title: const Text('My Notes', style: TextStyle(fontWeight: FontWeight.bold)),

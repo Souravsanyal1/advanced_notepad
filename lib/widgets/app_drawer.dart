@@ -25,7 +25,14 @@ class _AppDrawerState extends State<AppDrawer> {
   @override
   void initState() {
     super.initState();
+    _profileService.addListener(_loadProfileData);
     _loadProfileData();
+  }
+
+  @override
+  void dispose() {
+    _profileService.removeListener(_loadProfileData);
+    super.dispose();
   }
 
   Future<void> _loadProfileData() async {
@@ -188,7 +195,10 @@ class _AppDrawerState extends State<AppDrawer> {
           _DrawerItem(
             icon: Icons.info_outline,
             label: 'About',
-            onTap: () => _showAboutDialog(context),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/about');
+            },
           ),
           _DrawerItem(
             icon: Icons.favorite_border,
@@ -214,20 +224,6 @@ class _AppDrawerState extends State<AppDrawer> {
           ),
         ],
       ),
-    );
-  }
-
-  void _showAboutDialog(BuildContext context) {
-    showAboutDialog(
-      context: context,
-      applicationName: 'Advanced Notepad',
-      applicationVersion: '1.0.0',
-      applicationIcon: const Icon(Icons.note_alt, size: 40, color: Colors.blue),
-      children: [
-        const Text(
-          'An advanced notepad application built with Flutter and Firebase, featuring real-time synchronization, premium UI, and Cloudinary image support.',
-        ),
-      ],
     );
   }
 

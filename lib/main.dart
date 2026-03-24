@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/archive_screen.dart';
+import 'screens/about_screen.dart';
 import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -27,6 +28,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/home': (context) => const HomeScreen(),
         '/archive': (context) => const ArchiveScreen(),
+        '/about': (context) => const AboutScreen(),
       },
     );
   }
