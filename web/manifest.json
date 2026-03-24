@@ -1,11 +1,11 @@
 {
-    "name": "flutter_app_publish_2026",
-    "short_name": "flutter_app_publish_2026",
+    "name": "Advanced Notepad",
+    "short_name": "Advanced Notepad",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Professional notes and categorization app.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
