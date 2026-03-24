@@ -1,0 +1,25 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "ttestt-b6048",
+          "appId": "1:37876147762:android:4d5cacb88d55d79b11fe2b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "ttestt-b6048",
+          "configurations": {
+            "android": "1:37876147762:android:4d5cacb88d55d79b11fe2b",
+            "web": "1:37876147762:web:e61c094944cf1d8f11fe2b"
+          }
+        }
+      }
+    }
+  }
+}
