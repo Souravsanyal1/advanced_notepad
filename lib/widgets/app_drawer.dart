@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/profile_service.dart';
-import '../services/cloudinary_service.dart';
+import '../services/firebase_storage_service.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -15,7 +15,7 @@ class AppDrawer extends StatefulWidget {
 
 class _AppDrawerState extends State<AppDrawer> {
   final ProfileService _profileService = ProfileService();
-  final CloudinaryService _cloudinaryService = CloudinaryService();
+  final FirebaseStorageService _storageService = FirebaseStorageService();
   final ImagePicker _picker = ImagePicker();
 
   String? _profileImageUrl;
@@ -56,7 +56,7 @@ class _AppDrawerState extends State<AppDrawer> {
 
       setState(() => _isUploadingProfile = true);
 
-      final String? uploadedUrl = await _cloudinaryService.uploadImage(File(image.path));
+      final String? uploadedUrl = await _storageService.uploadImage(File(image.path), 'profile_photos');
 
       if (uploadedUrl != null) {
         await _profileService.setProfilePhoto(uploadedUrl);

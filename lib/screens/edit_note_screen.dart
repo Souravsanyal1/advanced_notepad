@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/note.dart';
 import '../services/firestore_service.dart';
-import '../services/cloudinary_service.dart';
+import '../services/firebase_storage_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io';
@@ -17,7 +17,7 @@ class EditNoteScreen extends StatefulWidget {
 
 class _EditNoteScreenState extends State<EditNoteScreen> {
   final FirestoreService _firestoreService = FirestoreService();
-  final CloudinaryService _cloudinaryService = CloudinaryService();
+  final FirebaseStorageService _storageService = FirebaseStorageService();
   final ImagePicker _picker = ImagePicker();
   
   final _titleController = TextEditingController();
@@ -61,7 +61,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
 
       setState(() => _isUploading = true);
 
-      final String? uploadedUrl = await _cloudinaryService.uploadImage(File(image.path));
+      final String? uploadedUrl = await _storageService.uploadImage(File(image.path), 'note_images');
       
       if (uploadedUrl != null) {
         setState(() {
@@ -72,7 +72,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         setState(() => _isUploading = false);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to upload image. Please check your Cloudinary setup.')),
+            const SnackBar(content: Text('Failed to upload image. Please check your Firebase Storage setup.')),
           );
         }
       }
