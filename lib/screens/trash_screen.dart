@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../models/note.dart';
@@ -54,10 +53,13 @@ class TrashScreen extends StatelessWidget {
           return AnimationLimiter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: MasonryGridView.count(
-                crossAxisCount: 2,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 0.85,
+                ),
                 itemCount: deletedNotes.length,
                 itemBuilder: (context, index) {
                   final note = deletedNotes[index];

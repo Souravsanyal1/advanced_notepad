@@ -6,8 +6,8 @@ import '../services/firestore_service.dart';
 import '../widgets/note_card.dart';
 import 'edit_note_screen.dart';
 
-class ArchiveScreen extends StatelessWidget {
-  const ArchiveScreen({super.key});
+class FavoritesScreen extends StatelessWidget {
+  const FavoritesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,10 +16,10 @@ class ArchiveScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Archive', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Favorites', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: StreamBuilder<List<Note>>(
-        stream: firestoreService.getNotes(isArchived: true, isDeleted: false),
+        stream: firestoreService.getNotes(isFavorite: true, isDeleted: false, isArchived: false),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -28,9 +28,9 @@ class ArchiveScreen extends StatelessWidget {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final archivedNotes = snapshot.data ?? [];
+          final favoriteNotes = snapshot.data ?? [];
 
-          if (archivedNotes.isEmpty) {
+          if (favoriteNotes.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -38,13 +38,15 @@ class ArchiveScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                      color: Colors.red.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.archive_rounded, size: 80, color: theme.colorScheme.secondary),
+                    child: Icon(Icons.favorite_rounded, size: 80, color: Colors.red.shade400),
                   ),
                   const SizedBox(height: 16),
-                  Text('Archive is empty', style: theme.textTheme.titleMedium),
+                  Text('No favorites yet', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  const Text('Mark some notes as favorite to see them here', style: TextStyle(color: Colors.grey)),
                 ],
               ),
             );
@@ -60,9 +62,9 @@ class ArchiveScreen extends StatelessWidget {
                   crossAxisSpacing: 10,
                   childAspectRatio: 0.85,
                 ),
-                itemCount: archivedNotes.length,
+                itemCount: favoriteNotes.length,
                 itemBuilder: (context, index) {
-                  final note = archivedNotes[index];
+                  final note = favoriteNotes[index];
                   return AnimationConfiguration.staggeredGrid(
                     position: index,
                     duration: const Duration(milliseconds: 375),

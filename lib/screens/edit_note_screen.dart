@@ -26,6 +26,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   final _contentController = TextEditingController();
   int _selectedColor = 0xFFFFFFFF; 
   bool _isPinned = false;
+  bool _isFavorite = false;
   bool _isArchived = false;
   bool _isDeleted = false;
   String? _imageUrl;
@@ -55,6 +56,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       _contentController.text = widget.note!.content;
       _selectedColor = widget.note!.color;
       _isPinned = widget.note!.isPinned;
+      _isFavorite = widget.note!.isFavorite;
       _isArchived = widget.note!.isArchived;
       _isDeleted = widget.note!.isDeleted;
       _imageUrl = widget.note!.imageUrl;
@@ -134,6 +136,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         createdAt: now,
         updatedAt: now,
         isPinned: _isPinned,
+        isFavorite: _isFavorite,
         isArchived: _isArchived,
         imageUrl: _imageUrl,
         labels: _selectedLabels,
@@ -146,6 +149,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         color: _selectedColor,
         updatedAt: now,
         isPinned: _isPinned,
+        isFavorite: _isFavorite,
         isArchived: _isArchived,
         imageUrl: _imageUrl,
         labels: _selectedLabels,
@@ -268,6 +272,14 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                   ),
                   onPressed: () => setState(() => _isPinned = !_isPinned),
                   tooltip: 'Pin note',
+                ),
+                IconButton(
+                  icon: Icon(
+                    _isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: _isFavorite ? Colors.red.shade400 : contrastColor,
+                  ),
+                  onPressed: () => setState(() => _isFavorite = !_isFavorite),
+                  tooltip: 'Favorite note',
                 ),
                 IconButton(
                   icon: Icon(
@@ -477,6 +489,16 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: _showCreateLabelDialog,
+                        icon: Icon(Icons.add, size: 16, color: contrastColor),
+                        label: Text('New Label', style: TextStyle(fontSize: 12, color: contrastColor)),
+                        style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
                     SizedBox(
                       width: double.infinity,
                       child: Wrap(
@@ -538,5 +560,42 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         ],
       ),
     );
+  }
+
+  void _showCreateLabelDialog() async {
+    final controller = TextEditingController();
+    final newLabel = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('New Label'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Label name',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+
+    if (newLabel != null && newLabel.isNotEmpty) {
+      await _firestoreService.addLabel(newLabel);
+      setState(() {
+        if (!_selectedLabels.contains(newLabel)) {
+          _selectedLabels.add(newLabel);
+        }
+      });
+    }
   }
 }

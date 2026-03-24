@@ -7,7 +7,7 @@ class FirestoreService {
   final CollectionReference _labelsCollection = FirebaseFirestore.instance
       .collection('labels');
 
-   Stream<List<Note>> getNotes({String? label, bool? isArchived, bool? isDeleted}) {
+   Stream<List<Note>> getNotes({String? label, bool? isArchived, bool? isDeleted, bool? isFavorite}) {
     Query query = _notesCollection.orderBy('updatedAt', descending: true);
     
     if (label != null) {
@@ -18,6 +18,9 @@ class FirestoreService {
     }
     if (isDeleted != null) {
       query = query.where('isDeleted', isEqualTo: isDeleted);
+    }
+    if (isFavorite != null) {
+      query = query.where('isFavorite', isEqualTo: isFavorite);
     }
 
     return query.snapshots().map((snapshot) {

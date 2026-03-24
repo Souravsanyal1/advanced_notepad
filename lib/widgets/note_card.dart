@@ -33,20 +33,20 @@ class NoteCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (note.imageUrl != null)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
+                  padding: const EdgeInsets.only(bottom: 8.0),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: note.imageUrl!.startsWith('http')
                         ? CachedNetworkImage(
                             imageUrl: note.imageUrl!,
                             placeholder: (context, url) => Container(
-                              height: 120,
+                              height: 80,
                               color: Colors.black.withValues(alpha: 0.05),
                               child: const Center(
                                 child: CircularProgressIndicator(strokeWidth: 2),
@@ -59,13 +59,13 @@ class NoteCard extends StatelessWidget {
                         : (File(note.imageUrl!).existsSync()
                             ? Image.file(
                                 File(note.imageUrl!),
-                                height: 120,
+                                height: 80,
                                 fit: BoxFit.cover,
                                 width: double.infinity,
                                 errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image_outlined),
                               )
                             : Container(
-                                height: 120,
+                                height: 80,
                                 color: Colors.black.withValues(alpha: 0.05),
                                 child: const Center(child: Icon(Icons.image_not_supported)),
                               )),
@@ -74,79 +74,67 @@ class NoteCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (note.title.isNotEmpty)
-                    Expanded(
-                      child: Text(
-                        note.title,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: contrastColor,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                  Expanded(
+                    child: Text(
+                      note.title.isEmpty ? 'Untitled' : note.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: contrastColor,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                  ),
                   if (note.isPinned)
-                    Icon(Icons.push_pin, size: 16, color: contrastColor),
+                    Icon(Icons.push_pin, size: 14, color: contrastColor),
+                  if (note.isFavorite)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Icon(Icons.favorite, size: 14, color: Colors.red.shade400),
+                    ),
                 ],
               ),
-              const SizedBox(height: 8),
-              if (note.content.isNotEmpty)
-                Text(
+              const SizedBox(height: 4),
+              Expanded(
+                child: Text(
                   note.content,
                   style: TextStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                    color: contrastColor,
+                    fontSize: 13,
+                    height: 1.4,
+                    color: contrastColor.withValues(alpha: 0.8),
                   ),
-                  maxLines: 8,
+                  maxLines: note.imageUrl != null ? 3 : 5,
                   overflow: TextOverflow.ellipsis,
                 ),
-              const SizedBox(height: 12),
-               Row(
+              ),
+              const SizedBox(height: 8),
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    DateFormat('MMM d, yyyy').format(note.updatedAt),
+                    DateFormat('MMM d').format(note.updatedAt),
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 10,
                       color: hintColor,
                     ),
                   ),
                   if (note.labels.isNotEmpty)
-                    Row(
-                      children: [
-                        const Icon(Icons.label_outline, size: 12, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${note.labels.length} labels',
-                          style: const TextStyle(fontSize: 10, color: Colors.grey),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: contrastColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        note.labels.first,
+                        style: TextStyle(fontSize: 9, color: contrastColor),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                 ],
               ),
-              if (note.labels.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: note.labels.take(3).map((label) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: contrastColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: contrastColor.withValues(alpha: 0.1)),
-                    ),
-                    child: Text(
-                      label,
-                      style: TextStyle(fontSize: 10, color: contrastColor, fontWeight: FontWeight.w500),
-                    ),
-                  )).toList(),
-                ),
-              ],
-
             ],
           ),
         ),

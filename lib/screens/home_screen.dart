@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../models/note.dart';
@@ -190,12 +189,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
-                      sliver: SliverMasonryGrid.count(
+                      sliver: SliverGrid.count(
                         crossAxisCount: 2,
                         mainAxisSpacing: 10,
                         crossAxisSpacing: 10,
-                        itemBuilder: (context, index) {
-                          final note = pinnedNotes[index];
+                        childAspectRatio: 0.85,
+                        children: pinnedNotes.map((note) {
+                          final index = pinnedNotes.indexOf(note);
                           return AnimationConfiguration.staggeredGrid(
                             position: index,
                             duration: const Duration(milliseconds: 400),
@@ -215,8 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           );
-                        },
-                        childCount: pinnedNotes.length,
+                        }).toList(),
                       ),
                     ),
                   ],
@@ -229,12 +228,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
-                      sliver: SliverMasonryGrid.count(
+                      sliver: SliverGrid.count(
                         crossAxisCount: 2,
                         mainAxisSpacing: 10,
                         crossAxisSpacing: 10,
-                        itemBuilder: (context, index) {
-                          final note = otherNotes[index];
+                        childAspectRatio: 0.85,
+                        children: otherNotes.map((note) {
+                          final index = otherNotes.indexOf(note);
                           final staggeredIndex = index + pinnedNotes.length;
                           return AnimationConfiguration.staggeredGrid(
                             position: staggeredIndex,
@@ -256,8 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           );
-                        },
-                        childCount: otherNotes.length,
+                        }).toList(),
                       ),
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 80)),

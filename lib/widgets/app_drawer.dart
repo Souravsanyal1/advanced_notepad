@@ -301,6 +301,14 @@ class _AppDrawerState extends State<AppDrawer> {
             ),
           ),
           _DrawerItem(
+            icon: Icons.favorite_outline_rounded,
+            label: 'Favorites',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/favorites');
+            },
+          ),
+          _DrawerItem(
             icon: Icons.archive_outlined,
             label: 'Archive',
             onTap: () {

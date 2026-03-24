@@ -7,14 +7,12 @@ class Note {
   final int color;
   final DateTime createdAt;
   final DateTime updatedAt;
-
   final bool isPinned;
+  final bool isFavorite;
   final bool isArchived;
   final String? imageUrl;
   final List<String> labels;
   final bool isDeleted;
-
-
 
   Note({
     required this.id,
@@ -24,6 +22,7 @@ class Note {
     required this.createdAt,
     required this.updatedAt,
     this.isPinned = false,
+    this.isFavorite = false,
     this.isArchived = false,
     this.imageUrl,
     this.labels = const [],
@@ -40,6 +39,7 @@ class Note {
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
       isPinned: data['isPinned'] ?? false,
+      isFavorite: data['isFavorite'] ?? false,
       isArchived: data['isArchived'] ?? false,
       imageUrl: data['imageUrl'],
       labels: List<String>.from(data['labels'] ?? []),
@@ -55,6 +55,7 @@ class Note {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'isPinned': isPinned,
+      'isFavorite': isFavorite,
       'isArchived': isArchived,
       'imageUrl': imageUrl,
       'labels': labels,
@@ -68,6 +69,7 @@ class Note {
     int? color,
     DateTime? updatedAt,
     bool? isPinned,
+    bool? isFavorite,
     bool? isArchived,
     String? imageUrl,
     List<String>? labels,
@@ -81,6 +83,7 @@ class Note {
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isPinned: isPinned ?? this.isPinned,
+      isFavorite: isFavorite ?? this.isFavorite,
       isArchived: isArchived ?? this.isArchived,
       imageUrl: imageUrl ?? this.imageUrl,
       labels: labels ?? this.labels,
