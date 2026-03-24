@@ -8,6 +8,9 @@ class Note {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  final bool isPinned;
+  final bool isArchived;
+
   Note({
     required this.id,
     required this.title,
@@ -15,6 +18,8 @@ class Note {
     required this.color,
     required this.createdAt,
     required this.updatedAt,
+    this.isPinned = false,
+    this.isArchived = false,
   });
 
   factory Note.fromFirestore(DocumentSnapshot doc) {
@@ -26,6 +31,8 @@ class Note {
       color: data['color'] ?? 0xFFFFFFFF,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      isPinned: data['isPinned'] ?? false,
+      isArchived: data['isArchived'] ?? false,
     );
   }
 
@@ -36,6 +43,8 @@ class Note {
       'color': color,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'isPinned': isPinned,
+      'isArchived': isArchived,
     };
   }
 
@@ -44,6 +53,8 @@ class Note {
     String? content,
     int? color,
     DateTime? updatedAt,
+    bool? isPinned,
+    bool? isArchived,
   }) {
     return Note(
       id: id,
@@ -52,6 +63,8 @@ class Note {
       color: color ?? this.color,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isPinned: isPinned ?? this.isPinned,
+      isArchived: isArchived ?? this.isArchived,
     );
   }
 }
