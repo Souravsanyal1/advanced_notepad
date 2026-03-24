@@ -167,66 +167,61 @@ class _AppDrawerState extends State<AppDrawer> {
               onTap: _isUploadingProfile ? null : _pickAndUploadProfilePhoto,
               child: Stack(
                 children: [
-                  CircleAvatar(
-                    radius: 36,
+                   CircleAvatar(
+                    radius: 40,
                     backgroundColor: Colors.white24,
                     backgroundImage: _profileImageUrl != null
                         ? CachedNetworkImageProvider(_profileImageUrl!)
                         : null,
                     child: _profileImageUrl == null && !_isUploadingProfile
-                        ? const Icon(Icons.person, size: 40, color: Colors.white)
+                        ? const Icon(Icons.person, size: 42, color: Colors.white)
                         : null,
                   ),
                   if (_isUploadingProfile)
                     const Center(
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     ),
-                  Positioned(
+                   Positioned(
                     bottom: 0,
                     right: 0,
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.black54,
+                        color: theme.colorScheme.primary,
                         shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
                       ),
-                      child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                      child: const Icon(Icons.camera_alt, size: 12, color: Colors.white),
                     ),
                   ),
                 ],
               ),
             ),
             accountName: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Text(
-                    _userName,
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                Text(
+                  _userName,
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 16, color: Colors.white70),
-                  onPressed: _editName,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: _editName,
+                  child: const Icon(Icons.edit_note_rounded, size: 20, color: Colors.white70),
                 ),
               ],
             ),
             accountEmail: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Text(
-                    _userEmail,
-                    style: GoogleFonts.outfit(fontSize: 14, color: Colors.white70),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                Text(
+                  _userEmail,
+                  style: GoogleFonts.outfit(fontSize: 14, color: Colors.white.withOpacity(0.9)),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.alternate_email, size: 14, color: Colors.white70),
-                  onPressed: _editEmail,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: _editEmail,
+                  child: const Icon(Icons.alternate_email_rounded, size: 16, color: Colors.white70),
                 ),
               ],
             ),
