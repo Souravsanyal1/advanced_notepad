@@ -219,46 +219,35 @@ class _AppDrawerState extends State<AppDrawer> {
               _noteController.setSelectedLabel(null);
               Navigator.pop(context);
             },
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${_noteController.allNotes.length}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
+            trailing: _buildBadge(_noteController.allNotes.length, theme),
           )),
-          _DrawerItem(
+          Obx(() => _DrawerItem(
             icon: Icons.favorite_outline_rounded,
             label: 'Favorites',
+            trailing: _buildBadge(_noteController.favoriteNotes.length, theme),
             onTap: () {
               Navigator.pop(context);
               Get.toNamed('/favorites');
             },
-          ),
-          _DrawerItem(
+          )),
+          Obx(() => _DrawerItem(
             icon: Icons.archive_outlined,
             label: 'Archive',
+            trailing: _buildBadge(_noteController.archivedNotes.length, theme),
             onTap: () {
               Navigator.pop(context);
               Get.toNamed('/archive');
             },
-          ),
-           _DrawerItem(
+          )),
+           Obx(() => _DrawerItem(
             icon: Icons.delete_outline_rounded,
             label: 'Trash',
+            trailing: _buildBadge(_noteController.trashNotes.length, theme),
             onTap: () {
               Navigator.pop(context);
               Get.toNamed('/trash');
             },
-          ),
+          )),
           const Divider(),
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -266,15 +255,20 @@ class _AppDrawerState extends State<AppDrawer> {
           ),
           // Personal & Work Labels (Dynamic)
           Obx(() => Column(
-            children: _noteController.labels.map((label) => _DrawerItem(
-              icon: Icons.label_outline_rounded,
-              label: label,
-              isSelected: _noteController.selectedLabel.value == label,
-              onTap: () {
-                _noteController.setSelectedLabel(label);
-                Navigator.pop(context);
-              },
-            )).toList(),
+            children: _noteController.labels.map((label) {
+              final count = _noteController.allNotes.where((n) => n.labels.contains(label)).length;
+              return _DrawerItem(
+                icon: Icons.label_outline_rounded,
+                label: label,
+                isSelected: _noteController.selectedLabel.value == label,
+                trailing: _buildBadge(count, theme),
+                onTap: () {
+                  _noteController.setSelectedLabel(label);
+                  Navigator.pop(context);
+                },
+                onLongPress: () => _showDeleteLabelDialog(label),
+              );
+            }).toList(),
           )),
 
           _DrawerItem(
@@ -325,6 +319,66 @@ class _AppDrawerState extends State<AppDrawer> {
     );
   }
 
+  Widget _buildBadge(int count, ThemeData theme) {
+    if (count == 0) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$count',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: theme.colorScheme.onPrimaryContainer,
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteLabelDialog(String label) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Label'),
+        content: Text('Are you sure you want to delete the label "$label"? This will remove it from all notes.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await _noteController.deleteLabel(label);
+                Get.snackbar(
+                  'Success',
+                  'Label "$label" deleted',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.green.withValues(alpha: 0.8),
+                  colorText: Colors.white,
+                );
+              } catch (e) {
+                Get.snackbar(
+                  'Error',
+                  'Failed to delete label: $e',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red.withValues(alpha: 0.8),
+                  colorText: Colors.white,
+                );
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+ 
   void _showDonationDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -508,6 +562,7 @@ class _DrawerItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final Widget? trailing;
   final bool isSelected;
 
@@ -515,6 +570,7 @@ class _DrawerItem extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.onLongPress,
     this.trailing,
     this.isSelected = false,
   });
@@ -539,6 +595,7 @@ class _DrawerItem extends StatelessWidget {
       selected: isSelected,
       selectedTileColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
       onTap: onTap,
+      onLongPress: onLongPress,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
