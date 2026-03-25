@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:ui';
 
 class DonationScreen extends StatefulWidget {
@@ -415,13 +416,27 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
               ),
             ],
           ),
-          child: Center(
-            child: Text(
-              symbol,
-              style: GoogleFonts.outfit(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+          child: ClipOval(
+            child: CachedNetworkImage(
+              imageUrl: logoUrl,
+              width: 64,
+              height: 64,
+              fit: BoxFit.contain,
+              placeholder: (context, url) => Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: color.withValues(alpha: 0.5),
+                ),
+              ),
+              errorWidget: (context, url, error) => Center(
+                child: Text(
+                  symbol,
+                  style: GoogleFonts.outfit(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
               ),
             ),
           ),
