@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -45,14 +46,54 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
     const String binanceId = '549323070';
 
     final List<Map<String, dynamic>> networks = [
-      {'name': 'BSC', 'symbol': 'BNB', 'color': const Color(0xFFF3BA2F)},
-      {'name': 'Optimism', 'symbol': 'OP', 'color': const Color(0xFFFF0420)},
-      {'name': 'Ethereum', 'symbol': 'ETH', 'color': const Color(0xFF627EEA)},
-      {'name': 'Aptos', 'symbol': 'APT', 'color': const Color(0xFF2DD4BF)},
-      {'name': 'Polygon', 'symbol': 'POL', 'color': const Color(0xFF8247E5)},
-      {'name': 'Solana', 'symbol': 'SOL', 'color': const Color(0xFF14F195)},
-      {'name': 'opBNB', 'symbol': 'BNB', 'color': const Color(0xFFF3BA2F)},
-      {'name': 'Arbitrum', 'symbol': 'ARB', 'color': const Color(0xFF28A0F0)},
+      {
+        'name': 'BSC', 
+        'symbol': 'BNB', 
+        'color': const Color(0xFFF3BA2F),
+        'logo': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=040'
+      },
+      {
+        'name': 'Optimism', 
+        'symbol': 'OP', 
+        'color': const Color(0xFFFF0420),
+        'logo': 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.png?v=040'
+      },
+      {
+        'name': 'Ethereum', 
+        'symbol': 'ETH', 
+        'color': const Color(0xFF627EEA),
+        'logo': 'https://cryptologos.cc/logos/ethereum-eth-logo.png?v=040'
+      },
+      {
+        'name': 'Aptos', 
+        'symbol': 'APT', 
+        'color': const Color(0xFF2DD4BF),
+        'logo': 'https://cryptologos.cc/logos/aptos-apt-logo.png?v=040'
+      },
+      {
+        'name': 'Polygon', 
+        'symbol': 'POL', 
+        'color': const Color(0xFF8247E5),
+        'logo': 'https://cryptologos.cc/logos/polygon-matic-logo.png?v=040'
+      },
+      {
+        'name': 'Solana', 
+        'symbol': 'SOL', 
+        'color': const Color(0xFF14F195),
+        'logo': 'https://cryptologos.cc/logos/solana-sol-logo.png?v=040'
+      },
+      {
+        'name': 'opBNB', 
+        'symbol': 'BNB', 
+        'color': const Color(0xFFF3BA2F),
+        'logo': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=040'
+      },
+      {
+        'name': 'Arbitrum', 
+        'symbol': 'ARB', 
+        'color': const Color(0xFF28A0F0),
+        'logo': 'https://cryptologos.cc/logos/arbitrum-arb-logo.png?v=040'
+      },
     ];
 
     return Scaffold(
@@ -145,10 +186,10 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                 
                 // Networks Grid
                 Wrap(
-                  spacing: 16,
-                  runSpacing: 20,
+                  spacing: 20,
+                  runSpacing: 24,
                   alignment: WrapAlignment.center,
-                  children: networks.map((net) => _buildTokenIcon(net['name'], net['symbol'], net['color'])).toList(),
+                  children: networks.map((net) => _buildTokenIcon(net['name'], net['symbol'], net['color'], net['logo'])).toList(),
                 ),
                 
                 const SizedBox(height: 40),
@@ -284,6 +325,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                   ),
                 ),
 
+
                 const SizedBox(height: 40),
                 
                 // Why Support Us Section
@@ -334,46 +376,70 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildTokenIcon(String name, String symbol, Color color) {
+  Widget _buildTokenIcon(String name, String symbol, Color color, String logoUrl) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 56,
-          height: 56,
+          width: 64,
+          height: 64,
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
+            color: color.withValues(alpha: 0.1),
             shape: BoxShape.circle,
             border: Border.all(
-              color: color.withValues(alpha: 0.4),
+              color: color.withValues(alpha: 0.3),
               width: 2,
             ),
             boxShadow: [
               BoxShadow(
-                color: color.withValues(alpha: 0.1),
-                blurRadius: 10,
+                color: color.withValues(alpha: 0.15),
+                blurRadius: 12,
                 spreadRadius: 2,
               ),
             ],
           ),
-          child: Center(
-            child: Text(
-              symbol,
-              style: GoogleFonts.outfit(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+          child: ClipOval(
+            child: CachedNetworkImage(
+              imageUrl: logoUrl,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                ),
+              ),
+              errorWidget: (context, url, error) => Center(
+                child: Text(
+                  symbol,
+                  style: GoogleFonts.outfit(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
               ),
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Text(
           name,
           style: GoogleFonts.outfit(
             fontSize: 12,
-            color: Colors.white70,
-            fontWeight: FontWeight.w500,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Text(
+          '($symbol)',
+          style: GoogleFonts.outfit(
+            fontSize: 10,
+            color: Colors.white38,
+            fontWeight: FontWeight.w400,
           ),
         ),
       ],
