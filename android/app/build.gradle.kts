@@ -48,13 +48,9 @@ android {
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
                 storePassword = keystoreProperties.getProperty("storePassword")
-                val storeFileName = keystoreProperties.getProperty("storeFile")
-                if (storeFileName != null) {
-                    storeFile = file(storeFileName)
-                    println("Keystore path: " + storeFile?.absolutePath)
-                } else {
-                    println("Warning: storeFile property missing in key.properties")
-                }
+                val storeFileName = keystoreProperties.getProperty("storeFile") ?: "upload-keystore.jks"
+                storeFile = file(storeFileName)
+                println("Keystore path: " + storeFile?.absolutePath)
             } else {
                 println("Warning: key.properties file not found in " + keystorePropertiesFile.absolutePath)
             }
