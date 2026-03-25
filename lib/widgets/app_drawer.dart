@@ -17,13 +17,15 @@ class AppDrawer extends StatefulWidget {
   State<AppDrawer> createState() => _AppDrawerState();
 }
 
-class _AppDrawerState extends State<AppDrawer> {
+class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMixin {
   final ProfileService _profileService = ProfileService();
   final LocalStorageService _storageService = LocalStorageService();
   final PhotoService _photoService = PhotoService();
   final ImagePicker _picker = ImagePicker();
   final NoteController _noteController = Get.find<NoteController>();
   final ThemeService _themeService = Get.find<ThemeService>();
+
+  late AnimationController _rotationController;
 
   String? _profileImageUrl;
   String _userName = 'Advanced User';
@@ -32,12 +34,17 @@ class _AppDrawerState extends State<AppDrawer> {
   @override
   void initState() {
     super.initState();
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
     _profileService.addListener(_loadProfileData);
     _loadProfileData();
   }
 
   @override
   void dispose() {
+    _rotationController.dispose();
     _profileService.removeListener(_loadProfileData);
     super.dispose();
   }
@@ -143,16 +150,34 @@ class _AppDrawerState extends State<AppDrawer> {
     final theme = Theme.of(context);
 
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
+      backgroundColor: theme.brightness == Brightness.dark 
+          ? const Color(0xFF0D0D0D) 
+          : const Color(0xFFFBFBFF),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: theme.brightness == Brightness.dark
+                ? [Colors.black, const Color(0xFF1A1A2E).withValues(alpha: 0.1)]
+                : [Colors.white, const Color(0xFFF0F2F5)],
+          ),
+        ),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
           UserAccountsDrawerHeader(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.secondary,
-                ],
+                colors: theme.brightness == Brightness.dark
+                    ? [
+                        const Color(0xFF141E30),
+                        const Color(0xFF243B55),
+                      ]
+                    : [
+                        const Color(0xFFE0C3FC),
+                        const Color(0xFF8EC5FC),
+                      ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -160,9 +185,42 @@ class _AppDrawerState extends State<AppDrawer> {
             currentAccountPicture: GestureDetector(
               onTap: _isUploadingProfile ? null : _pickAndUploadProfilePhoto,
               child: Stack(
+                alignment: Alignment.center,
                 children: [
-                   CircleAvatar(
-                    radius: 40,
+                  // Rainbow Border with Rotation Animation
+                  RotationTransition(
+                    turns: _rotationController,
+                    child: Container(
+                      width: 76,
+                      height: 76,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: SweepGradient(
+                          colors: [
+                            Colors.red,
+                            Colors.orange,
+                            Colors.yellow,
+                            Colors.green,
+                            Colors.blue,
+                            Colors.indigo,
+                            Colors.purple,
+                            Colors.red,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Inner Background Mask
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.brightness == Brightness.dark ? const Color(0xFF141E30) : Colors.white,
+                    ),
+                  ),
+                  CircleAvatar(
+                    radius: 34,
                     backgroundColor: Colors.white24,
                     backgroundImage: _profileImageUrl != null
                         ? (_profileImageUrl!.startsWith('http')
@@ -170,26 +228,33 @@ class _AppDrawerState extends State<AppDrawer> {
                             : FileImage(File(_profileImageUrl!)) as ImageProvider)
                         : null,
                     child: _profileImageUrl == null && !_isUploadingProfile
-                        ? const Icon(Icons.person, size: 42, color: Colors.white)
+                        ? const Icon(Icons.person, size: 38, color: Colors.white)
                         : (_profileImageUrl != null && !_profileImageUrl!.startsWith('http') && !File(_profileImageUrl!).existsSync()
-                            ? const Icon(Icons.person, size: 42, color: Colors.white)
+                            ? const Icon(Icons.person, size: 38, color: Colors.white)
                             : null),
                   ),
                   if (_isUploadingProfile)
                     const Center(
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     ),
-                   Positioned(
-                    bottom: 0,
-                    right: 0,
+                  Positioned(
+                    bottom: 2,
+                    right: 2,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                        color: theme.colorScheme.primary,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                        border: Border.all(color: Colors.white, width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      child: const Icon(Icons.camera_alt, size: 12, color: Colors.white),
+                      child: const Icon(Icons.camera_alt, size: 10, color: Colors.white),
                     ),
                   ),
                 ],
@@ -248,10 +313,18 @@ class _AppDrawerState extends State<AppDrawer> {
               Get.toNamed('/trash');
             },
           )),
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Text('LABELS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+          _buildCustomDivider(theme),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+            child: Text(
+              'LABELS', 
+              style: GoogleFonts.outfit(
+                fontSize: 11, 
+                fontWeight: FontWeight.bold, 
+                color: theme.colorScheme.primary.withValues(alpha: 0.6), 
+                letterSpacing: 1.5
+              )
+            ),
           ),
           // Personal & Work Labels (Dynamic)
           Obx(() => Column(
@@ -277,14 +350,21 @@ class _AppDrawerState extends State<AppDrawer> {
             onTap: () => _showCreateLabelDialog(),
           ),
 
-          const Divider(),
-          Obx(() => SwitchListTile(
-            title: const Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w500)),
-            secondary: const Icon(Icons.dark_mode_outlined),
-            value: _themeService.isDarkMode,
-            onChanged: (value) => _themeService.toggleTheme(),
+          _buildCustomDivider(theme),
+          Obx(() => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: SwitchListTile(
+              title: Text('Dark Mode', style: GoogleFonts.outfit(fontWeight: FontWeight.w500)),
+              secondary: Icon(
+                _themeService.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                color: _themeService.isDarkMode ? Colors.amber : Colors.blueGrey,
+              ),
+              value: _themeService.isDarkMode,
+              onChanged: (value) => _themeService.toggleTheme(),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           )),
-          const Divider(),
+          _buildCustomDivider(theme),
           _DrawerItem(
             icon: Icons.info_outline,
             label: 'About',
@@ -306,19 +386,30 @@ class _AppDrawerState extends State<AppDrawer> {
             label: 'Update',
             onTap: () => _showUpdateDialog(context),
           ),
-          const Divider(),
+          _buildCustomDivider(theme),
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(20.0),
             child: Text(
               'App Version: 1.0.1+2',
-              style: TextStyle(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                 fontSize: 12,
+                letterSpacing: 0.5,
               ),
             ),
           ),
         ],
       ),
+    ),
+  );
+}
+
+  Widget _buildCustomDivider(ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      height: 1,
+      color: theme.colorScheme.outline.withValues(alpha: 0.1),
     );
   }
 
@@ -485,25 +576,53 @@ class _DrawerItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    return ListTile(
-      leading: Icon(
-        icon, 
-        color: isSelected ? theme.colorScheme.primary : theme.iconTheme.color
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Stack(
+        children: [
+          ListTile(
+            leading: Icon(
+              icon, 
+              color: isSelected ? theme.colorScheme.primary : theme.iconTheme.color?.withValues(alpha: 0.7)
+            ),
+            title: Text(
+              label, 
+              style: GoogleFonts.outfit(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? theme.colorScheme.primary : theme.textTheme.bodyLarge?.color,
+                fontSize: 15,
+              )
+            ),
+            trailing: trailing,
+            selected: isSelected,
+            selectedTileColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.15),
+            onTap: onTap,
+            onLongPress: onLongPress,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+          ),
+          if (isSelected)
+            Positioned(
+              left: 0,
+              top: 12,
+              bottom: 12,
+              child: Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(4)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(1, 0),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
-      title: Text(
-        label, 
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-          color: isSelected ? theme.colorScheme.primary : theme.textTheme.bodyLarge?.color,
-        )
-      ),
-      trailing: trailing,
-      selected: isSelected,
-      selectedTileColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
-      onTap: onTap,
-      onLongPress: onLongPress,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }
 }

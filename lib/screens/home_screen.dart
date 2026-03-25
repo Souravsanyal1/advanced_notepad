@@ -21,15 +21,20 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   final NoteController _noteController = Get.find<NoteController>();
   final ProfileService _profileService = ProfileService();
   final RxString _searchQuery = ''.obs;
   String? _profileImageUrl;
+  late AnimationController _rotationController;
 
   @override
   void initState() {
     super.initState();
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
     _profileService.addListener(_loadProfile);
     _loadProfile();
     
@@ -44,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _rotationController.dispose();
     _profileService.removeListener(_loadProfile);
     super.dispose();
   }
@@ -87,22 +93,69 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: () => Scaffold.of(context).openDrawer(),
                 )),
             actions: [
-              IconButton(onPressed: () {}, icon: const Icon(Icons.sort)),
+              Obx(() => IconButton(
+                onPressed: () => _showFilterSheet(context), 
+                icon: Icon(
+                  _noteController.currentFilter.value == NoteFilter.all 
+                    ? Icons.filter_list_rounded 
+                    : Icons.filter_alt_rounded,
+                  color: _noteController.currentFilter.value == NoteFilter.all 
+                    ? null 
+                    : theme.colorScheme.primary,
+                ),
+              )),
               GestureDetector(
                 onTap: () => Scaffold.of(context).openDrawer(),
                 child: Padding(
-                  padding: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-                  child: CircleAvatar(
-                    radius: 18,
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    backgroundImage: _profileImageUrl != null
-                        ? (_profileImageUrl!.startsWith('http')
-                            ? CachedNetworkImageProvider(_profileImageUrl!)
-                            : FileImage(File(_profileImageUrl!)) as ImageProvider)
-                        : null,
-                    child: _profileImageUrl == null
-                        ? Icon(Icons.person, color: theme.colorScheme.onPrimaryContainer, size: 20)
-                        : null,
+                  padding: const EdgeInsets.only(right: 16, top: 4, bottom: 4),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Rotating Rainbow Border
+                      RotationTransition(
+                        turns: _rotationController,
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: SweepGradient(
+                              colors: [
+                                Colors.red,
+                                Colors.orange,
+                                Colors.yellow,
+                                Colors.green,
+                                Colors.blue,
+                                Colors.indigo,
+                                Colors.purple,
+                                Colors.red,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Inner background to mask the border
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: theme.brightness == Brightness.dark ? Colors.black : Colors.white,
+                        ),
+                      ),
+                      CircleAvatar(
+                        radius: 17,
+                        backgroundColor: theme.colorScheme.primaryContainer,
+                        backgroundImage: _profileImageUrl != null
+                            ? (_profileImageUrl!.startsWith('http')
+                                ? CachedNetworkImageProvider(_profileImageUrl!)
+                                : FileImage(File(_profileImageUrl!)) as ImageProvider)
+                            : null,
+                        child: _profileImageUrl == null
+                            ? Icon(Icons.person, color: theme.colorScheme.onPrimaryContainer, size: 18)
+                            : null,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -113,9 +166,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.black.withValues(alpha: 0.3)
+                        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+                    border: Border.all(
+                      color: theme.brightness == Brightness.dark
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : theme.colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: TextField(
                     onChanged: (value) => _searchQuery.value = value,
@@ -517,6 +583,196 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showFilterSheet(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            )
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Filter Notes',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildFilterOption(
+              context,
+              filter: NoteFilter.all,
+              icon: Icons.notes_rounded,
+              label: 'Everything',
+              subtitle: 'Show all your notes',
+            ),
+            _buildFilterDivider(theme),
+            _buildFilterOption(
+              context,
+              filter: NoteFilter.dateNewest,
+              icon: Icons.history_rounded,
+              label: 'Latest First',
+              subtitle: 'Newest notes at the top',
+            ),
+            _buildFilterOption(
+              context,
+              filter: NoteFilter.dateOldest,
+              icon: Icons.update_rounded,
+              label: 'Oldest First',
+              subtitle: 'Classic notes at the top',
+            ),
+            _buildFilterDivider(theme),
+            _buildFilterOption(
+              context,
+              filter: NoteFilter.hasSignature,
+              icon: Icons.gesture_rounded,
+              label: 'With Signature',
+              subtitle: 'Hand-signed special notes',
+            ),
+            _buildFilterOption(
+              context,
+              filter: NoteFilter.hasImage,
+              icon: Icons.image_outlined,
+              label: 'With Photos',
+              subtitle: 'Notes with visual memories',
+            ),
+            _buildFilterDivider(theme),
+            _buildFilterOption(
+              context,
+              filter: NoteFilter.byDate,
+              icon: Icons.calendar_today_rounded,
+              label: 'Specific Date',
+              subtitle: _noteController.selectedDate.value != null 
+                ? 'Filtering by ${_noteController.selectedDate.value!.day}/${_noteController.selectedDate.value!.month}/${_noteController.selectedDate.value!.year}'
+                : 'Choose a calendar day',
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleFilterTap(NoteFilter filter) async {
+    if (filter == NoteFilter.byDate) {
+      final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: _noteController.selectedDate.value ?? DateTime.now(),
+        firstDate: DateTime(2020),
+        lastDate: DateTime.now().add(const Duration(days: 365)),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: Theme.of(context).colorScheme.copyWith(
+                primary: Theme.of(context).colorScheme.primary,
+                onPrimary: Theme.of(context).colorScheme.onPrimary,
+                onSurface: Theme.of(context).colorScheme.onSurface,
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+            child: child!,
+          );
+        },
+      );
+      if (picked != null) {
+        _noteController.setFilter(filter, date: picked);
+        if (mounted) Navigator.pop(context);
+      }
+    } else {
+      _noteController.setFilter(filter);
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
+  Widget _buildFilterOption(
+    BuildContext context, {
+    required NoteFilter filter,
+    required IconData icon,
+    required String label,
+    required String subtitle,
+  }) {
+    final theme = Theme.of(context);
+    return Obx(() {
+      final isSelected = _noteController.currentFilter.value == filter;
+      
+      return ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: isSelected 
+                ? theme.colorScheme.primaryContainer 
+                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+            size: 22,
+          ),
+        ),
+        title: Text(
+          label,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          ),
+        ),
+        trailing: isSelected 
+            ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary) 
+            : null,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _handleFilterTap(filter);
+        },
+      );
+    });
+  }
+
+  Widget _buildFilterDivider(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Divider(
+        height: 1,
+        color: theme.colorScheme.outline.withValues(alpha: 0.1),
       ),
     );
   }

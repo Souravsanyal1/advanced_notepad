@@ -136,10 +136,11 @@ class NoteCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    DateFormat('MMM d').format(note.updatedAt),
+                    DateFormat('MMM d • h:mm a').format(note.updatedAt),
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 9,
                       color: hintColor,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   if (note.labels.isNotEmpty)

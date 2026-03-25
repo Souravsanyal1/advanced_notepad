@@ -45,6 +45,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   int _charCount = 0;
   String? _signatureUrl;
   late SignatureController _sigController;
+  late DateTime _creationTime;
 
   final List<int> _colors = [
     0xFFFFFFFF, // white
@@ -62,6 +63,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   @override
   void initState() {
     super.initState();
+    _creationTime = DateTime.now();
     if (widget.note != null) {
       _titleController.text = widget.note!.title;
       _contentController.text = widget.note!.content;
@@ -384,18 +386,20 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                     ),
                   ),
                 ),
-                if (widget.note != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-                    child: Text(
-                      'Edited: ${DateFormat('MMM d, yyyy • hh:mm a').format(widget.note!.updatedAt)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: hintColor,
-                        fontWeight: FontWeight.w500,
-                      ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                  child: Text(
+                    widget.note != null
+                        ? 'Edited • ${DateFormat('MMM d, yyyy • h:mm a').format(widget.note!.updatedAt)}'
+                        : 'New Note • ${DateFormat('MMM d, yyyy • h:mm a').format(_creationTime)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: hintColor,
+                      letterSpacing: 0.5,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                ),
                 if (_isUploading)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),

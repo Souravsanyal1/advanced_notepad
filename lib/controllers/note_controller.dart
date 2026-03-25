@@ -2,6 +2,15 @@ import 'package:get/get.dart';
 import '../models/note.dart';
 import '../services/firestore_service.dart';
 
+enum NoteFilter {
+  all,
+  hasSignature,
+  hasImage,
+  dateNewest,
+  dateOldest,
+  byDate,
+}
+
 class NoteController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
 
@@ -11,6 +20,8 @@ class NoteController extends GetxController {
   final RxList<Note> trashNotes = <Note>[].obs;
   final RxList<String> labels = <String>[].obs;
   final RxString selectedLabel = ''.obs;
+  final Rx<NoteFilter> currentFilter = NoteFilter.all.obs;
+  final Rx<DateTime?> selectedDate = Rx<DateTime?>(null);
 
   @override
   void onInit() {
@@ -34,11 +45,57 @@ class NoteController extends GetxController {
     trashNotes.bindStream(_firestoreService.getNotes(isDeleted: true));
   }
 
-  List<Note> get filteredNotes {
-    if (selectedLabel.isEmpty) {
-      return allNotes;
+  List<Note> get filteredNotes => _applyFilter(allNotes.where((note) {
+    if (selectedLabel.isEmpty) return true;
+    return note.labels.contains(selectedLabel.value);
+  }).toList());
+
+  List<Note> get filteredFavoriteNotes => _applyFilter(favoriteNotes);
+  List<Note> get filteredArchivedNotes => _applyFilter(archivedNotes);
+  List<Note> get filteredTrashNotes => _applyFilter(trashNotes);
+
+  List<Note> _applyFilter(List<Note> notesList) {
+    List<Note> notes = List<Note>.from(notesList);
+
+    // Apply Filter
+    switch (currentFilter.value) {
+      case NoteFilter.hasSignature:
+        notes = notes.where((n) => n.signatureUrl != null && n.signatureUrl!.isNotEmpty).toList();
+        break;
+      case NoteFilter.hasImage:
+        notes = notes.where((n) => n.imageUrl != null && n.imageUrl!.isNotEmpty).toList();
+        break;
+      case NoteFilter.dateNewest:
+        notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+      case NoteFilter.dateOldest:
+        notes.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        break;
+      case NoteFilter.byDate:
+        if (selectedDate.value != null) {
+          notes = notes.where((n) {
+            final date = n.createdAt;
+            final selected = selectedDate.value!;
+            return date.year == selected.year && 
+                   date.month == selected.month && 
+                   date.day == selected.day;
+          }).toList();
+        }
+        break;
+      case NoteFilter.all:
+        break;
     }
-    return allNotes.where((note) => note.labels.contains(selectedLabel.value)).toList();
+
+    return notes;
+  }
+
+  void setFilter(NoteFilter filter, {DateTime? date}) {
+    currentFilter.value = filter;
+    if (filter == NoteFilter.byDate && date != null) {
+      selectedDate.value = date;
+    } else if (filter != NoteFilter.byDate) {
+      selectedDate.value = null;
+    }
   }
 
   void setSelectedLabel(String? label) {
