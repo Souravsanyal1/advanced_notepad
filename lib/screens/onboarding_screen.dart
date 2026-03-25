@@ -62,8 +62,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  _pages[_currentPage].color.withOpacity(0.8),
-                  _pages[_currentPage].color.withOpacity(0.4),
+                  _pages[_currentPage].color.withValues(alpha: 0.8),
+                  _pages[_currentPage].color.withValues(alpha: 0.4),
                   Colors.black,
                 ],
               ),
@@ -144,7 +144,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: Text(
                   'Skip',
                   style: GoogleFonts.outfit(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -164,7 +164,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       height: 8,
       width: isActive ? 24 : 8,
       decoration: BoxDecoration(
-        color: isActive ? Colors.white : Colors.white.withOpacity(0.4),
+        color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(4),
       ),
     );
@@ -193,7 +193,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.all(30),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
               ),
               child: Icon(
                 data.icon,
@@ -212,10 +212,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Container(
                 padding: const EdgeInsets.all(30),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     width: 1.5,
                   ),
                 ),
@@ -236,7 +236,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       data.description,
                       style: GoogleFonts.outfit(
                         fontSize: 16,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         height: 1.5,
                       ),
                       textAlign: TextAlign.center,

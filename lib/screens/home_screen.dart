@@ -67,7 +67,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _showFeatureDiscovery() async {
-    // Only show once per session or use a persistence flag
     final isFirstLaunch = !Get.isRegistered<bool>(tag: 'showcase_shown');
     if (isFirstLaunch) {
       ShowCaseWidget.of(context).startShowCase([
@@ -107,55 +106,50 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         dialogStyle: UpgradeDialogStyle.material,
         showIgnore: false,
         child: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          SliverAppBar(
-            title: Obx(() => Text(
-              _noteController.selectedLabel.value.isEmpty ? 'My Notes' : _noteController.selectedLabel.value, 
-              style: const TextStyle(fontWeight: FontWeight.bold)
-            )),
-            floating: true,
-            snap: true,
-            pinned: true,
-            elevation: innerBoxIsScrolled ? 4 : 0,
-            forceElevated: innerBoxIsScrolled,
-            leading: Obx(() => _noteController.selectedLabel.value.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => _noteController.setSelectedLabel(null),
-                )
-              : Showcase(
-              key: _menuKey,
-              description: 'Access your categories and settings here',
-              child: IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-            )),
-            actions: [
-              Showcase(
-                key: _filterKey,
-                description: 'Filter notes by date, images, or signature',
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverAppBar(
+              title: Obx(() => Text(
+                _noteController.selectedLabel.value.isEmpty ? 'My Notes' : _noteController.selectedLabel.value, 
+                style: const TextStyle(fontWeight: FontWeight.bold)
+              )),
+              floating: true,
+              snap: true,
+              pinned: true,
+              elevation: innerBoxIsScrolled ? 4 : 0,
+              forceElevated: innerBoxIsScrolled,
+              leading: Obx(() => _noteController.selectedLabel.value.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => _noteController.setSelectedLabel(null),
+                  )
+                : Showcase(
+                key: _menuKey,
+                description: 'Access your categories and settings here',
                 child: IconButton(
-                  icon: const Icon(Icons.tune),
-                  onPressed: () => _showFilterSheet(context),
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Showcase(
-                key: _profileKey,
-                description: 'View and manage your profile',
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    _showProfileOptions(context);
-                  },
+              )),
+              actions: [
+                Showcase(
+                  key: _filterKey,
+                  description: 'Filter notes by date, images, or signature',
+                  child: IconButton(
+                    icon: const Icon(Icons.tune),
+                    onPressed: () => _showFilterSheet(context),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Showcase(
+                  key: _profileKey,
+                  description: 'Profile identity (Non-interactive)',
                   child: RotationTransition(
                     turns: _rotationController,
                     child: Container(
                       padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: const SweepGradient(
+                        gradient: SweepGradient(
                           colors: [
                             Colors.blue,
                             Colors.purple,
@@ -181,48 +175,47 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-            ],
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(70),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: theme.brightness == Brightness.dark
-                        ? Colors.black.withValues(alpha: 0.3)
-                        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
+                const SizedBox(width: 16),
+              ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(70),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Container(
+                    decoration: BoxDecoration(
                       color: theme.brightness == Brightness.dark
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : theme.colorScheme.outline.withValues(alpha: 0.2),
+                          ? Colors.black.withValues(alpha: 0.3)
+                          : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: theme.brightness == Brightness.dark
+                            ? Colors.white.withValues(alpha: 0.1)
+                            : theme.colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                    child: Showcase(
+                      key: _searchKey,
+                      description: 'Search through your notes instantly',
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          hintText: 'Search notes...',
+                          prefixIcon: Icon(Icons.search, color: Colors.grey),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        onChanged: (value) => _searchQuery.value = value,
                       ),
-                    ],
-                  ),
-                  child: Showcase(
-                    key: _searchKey,
-                    description: 'Search through your notes instantly',
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search notes...',
-                        prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                      onChanged: (value) => _searchQuery.value = value,
                     ),
                   ),
                 ),
               ),
-            ),
             ),
             SliverToBoxAdapter(
               child: Showcase(
@@ -232,165 +225,165 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
           ],
-        body: RefreshIndicator(
-          onRefresh: () async {
-            HapticFeedback.mediumImpact();
-            await _noteController.fetchNotes();
-          },
-          child: Obx(() {
-            if (_noteController.isLoading.value) {
-              return const NoteGridShimmer();
-            }
+          body: RefreshIndicator(
+            onRefresh: () async {
+              HapticFeedback.mediumImpact();
+              await _noteController.fetchNotes();
+            },
+            child: Obx(() {
+              if (_noteController.isLoading.value) {
+                return const NoteGridShimmer();
+              }
 
-            final notes = _noteController.filteredNotes.where((note) {
-              if (_searchQuery.value.isEmpty) return true;
-              return note.title.toLowerCase().contains(_searchQuery.value.toLowerCase()) ||
-                  note.content.toLowerCase().contains(_searchQuery.value.toLowerCase());
-            }).toList();
+              final notes = _noteController.filteredNotes.where((note) {
+                if (_searchQuery.value.isEmpty) return true;
+                return note.title.toLowerCase().contains(_searchQuery.value.toLowerCase()) ||
+                    note.content.toLowerCase().contains(_searchQuery.value.toLowerCase());
+              }).toList();
 
-            if (notes.isEmpty) {
-              return SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.6,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                            shape: BoxShape.circle,
+              if (notes.isEmpty) {
+                return SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.6,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.edit_note_rounded, size: 80, color: theme.colorScheme.primary),
                           ),
-                          child: Icon(Icons.edit_note_rounded, size: 80, color: theme.colorScheme.primary),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          _searchQuery.value.isEmpty ? 'Begin your journey' : 'No matches found',
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _searchQuery.value.isEmpty ? 'Tap the button below to create a note' : 'Try a different keyword',
-                          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
-                        ),
-                      ],
+                          const SizedBox(height: 20),
+                          Text(
+                            _searchQuery.value.isEmpty ? 'Begin your journey' : 'No matches found',
+                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _searchQuery.value.isEmpty ? 'Tap the button below to create a note' : 'Try a different keyword',
+                            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                );
+              }
+
+              final pinnedNotes = notes.where((n) => n.isPinned).toList();
+              final otherNotes = notes.where((n) => !n.isPinned).toList();
+
+              return AnimationLimiter(
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    if (pinnedNotes.isNotEmpty) ...[
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Text('PINNED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
+                        ),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        sliver: SliverGrid.count(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 0.85,
+                          children: pinnedNotes.map((note) {
+                            final index = pinnedNotes.indexOf(note);
+                            return AnimationConfiguration.staggeredGrid(
+                              position: index,
+                              duration: const Duration(milliseconds: 400),
+                              columnCount: 2,
+                              child: ScaleAnimation(
+                                child: FadeInAnimation(
+                                  child: OpenContainer(
+                                    transitionDuration: const Duration(milliseconds: 500),
+                                    openColor: Color(note.color),
+                                    closedColor: Colors.transparent,
+                                    closedElevation: 0,
+                                    openElevation: 0,
+                                    closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                    openBuilder: (context, action) => EditNoteScreen(note: note),
+                                    closedBuilder: (context, action) => NoteCard(
+                                      note: note, 
+                                      onTap: action,
+                                      onLongPress: () {
+                                        HapticFeedback.mediumImpact();
+                                        _showNoteOptions(note);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                    if (otherNotes.isNotEmpty) ...[
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+                          child: Text('OTHERS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
+                        ),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        sliver: SliverGrid.count(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 0.85,
+                          children: otherNotes.map((note) {
+                            final index = otherNotes.indexOf(note);
+                            final staggeredIndex = index + pinnedNotes.length;
+                            return AnimationConfiguration.staggeredGrid(
+                              position: staggeredIndex,
+                              duration: const Duration(milliseconds: 400),
+                              columnCount: 2,
+                              child: SlideAnimation(
+                                verticalOffset: 50.0,
+                                child: FadeInAnimation(
+                                  child: OpenContainer(
+                                    transitionDuration: const Duration(milliseconds: 500),
+                                    openColor: Color(note.color),
+                                    closedColor: Colors.transparent,
+                                    closedElevation: 0,
+                                    openElevation: 0,
+                                    closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                    openBuilder: (context, action) => EditNoteScreen(note: note),
+                                    closedBuilder: (context, action) => NoteCard(
+                                      note: note, 
+                                      onTap: action,
+                                      onLongPress: () {
+                                        HapticFeedback.mediumImpact();
+                                        _showNoteOptions(note);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                    const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                  ],
                 ),
               );
-            }
-
-            final pinnedNotes = notes.where((n) => n.isPinned).toList();
-            final otherNotes = notes.where((n) => !n.isPinned).toList();
-
-            return AnimationLimiter(
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  if (pinnedNotes.isNotEmpty) ...[
-                    const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Text('PINNED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
-                      ),
-                    ),
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      sliver: SliverGrid.count(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 10,
-                        crossAxisSpacing: 10,
-                        childAspectRatio: 0.85,
-                        children: pinnedNotes.map((note) {
-                          final index = pinnedNotes.indexOf(note);
-                          return AnimationConfiguration.staggeredGrid(
-                            position: index,
-                            duration: const Duration(milliseconds: 400),
-                            columnCount: 2,
-                            child: ScaleAnimation(
-                              child: FadeInAnimation(
-                                child: OpenContainer(
-                                  transitionDuration: const Duration(milliseconds: 500),
-                                  openColor: Color(note.color),
-                                  closedColor: Colors.transparent,
-                                  closedElevation: 0,
-                                  openElevation: 0,
-                                  closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                  openBuilder: (context, action) => EditNoteScreen(note: note),
-                                  closedBuilder: (context, action) => NoteCard(
-                                    note: note, 
-                                    onTap: action,
-                                    onLongPress: () {
-                                      HapticFeedback.mediumImpact();
-                                      _showNoteOptions(note);
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                  if (otherNotes.isNotEmpty) ...[
-                    const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-                        child: Text('OTHERS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
-                      ),
-                    ),
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      sliver: SliverGrid.count(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 10,
-                        crossAxisSpacing: 10,
-                        childAspectRatio: 0.85,
-                        children: otherNotes.map((note) {
-                          final index = otherNotes.indexOf(note);
-                          final staggeredIndex = index + pinnedNotes.length;
-                          return AnimationConfiguration.staggeredGrid(
-                            position: staggeredIndex,
-                            duration: const Duration(milliseconds: 400),
-                            columnCount: 2,
-                            child: SlideAnimation(
-                              verticalOffset: 50.0,
-                              child: FadeInAnimation(
-                                child: OpenContainer(
-                                  transitionDuration: const Duration(milliseconds: 500),
-                                  openColor: Color(note.color),
-                                  closedColor: Colors.transparent,
-                                  closedElevation: 0,
-                                  openElevation: 0,
-                                  closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                  openBuilder: (context, action) => EditNoteScreen(note: note),
-                                  closedBuilder: (context, action) => NoteCard(
-                                    note: note, 
-                                    onTap: action,
-                                    onLongPress: () {
-                                      HapticFeedback.mediumImpact();
-                                      _showNoteOptions(note);
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                  const SliverToBoxAdapter(child: SizedBox(height: 80)),
-                ],
-              ),
-            );
-          }),
+            }),
+          ),
         ),
       ),
-    ),
       floatingActionButton: Showcase(
         key: _addNoteKey,
         description: 'Create a new note instantly',
@@ -609,52 +602,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     });
   }
 
-  void _showProfileOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('Developer Info'),
-              onTap: () {
-                Navigator.pop(context);
-                Get.toNamed('/developer-info');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.volunteer_activism_outlined),
-              title: const Text('Donate / Support'),
-              onTap: () {
-                Navigator.pop(context);
-                Get.toNamed('/donation');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('About App'),
-              onTap: () {
-                Navigator.pop(context);
-                Get.toNamed('/about');
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showDeleteLabelDialog(String label) {
     showDialog(
       context: context,
@@ -805,73 +752,55 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         },
       );
       if (picked != null) {
-        _noteController.setFilter(filter, date: picked);
+        _noteController.setFilter(NoteFilter.byDate, date: picked);
         if (mounted) Navigator.pop(context);
       }
     } else {
       _noteController.setFilter(filter);
-      if (mounted) Navigator.pop(context);
+      Navigator.pop(context);
     }
   }
 
-  Widget _buildFilterOption(
-    BuildContext context, {
+  Widget _buildFilterOption(BuildContext context, {
     required NoteFilter filter,
     required IconData icon,
     required String label,
     required String subtitle,
   }) {
     final theme = Theme.of(context);
-    return Obx(() {
-      final isSelected = _noteController.currentFilter.value == filter;
-      
-      return ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: isSelected 
-                ? theme.colorScheme.primaryContainer 
-                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            icon,
-            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-            size: 22,
-          ),
+    final isSelected = _noteController.currentFilter.value == filter;
+    
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isSelected ? theme.colorScheme.primary.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
         ),
-        title: Text(
-          label,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
-          ),
+        child: Icon(
+          icon,
+          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
         ),
-        subtitle: Text(
-          subtitle,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-          ),
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
         ),
-        trailing: isSelected 
-            ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary) 
-            : null,
-        onTap: () {
-          HapticFeedback.lightImpact();
-          _handleFilterTap(filter);
-        },
-      );
-    });
+      ),
+      subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
+      trailing: isSelected ? Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 20) : null,
+      onTap: () => _handleFilterTap(filter),
+    );
   }
 
   Widget _buildFilterDivider(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Divider(
-        height: 1,
-        color: theme.colorScheme.outline.withValues(alpha: 0.1),
-      ),
+    return Divider(
+      indent: 72,
+      endIndent: 24,
+      height: 1,
+      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
     );
   }
 }
