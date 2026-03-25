@@ -54,6 +54,41 @@ class NoteController extends GetxController {
   Future<void> addLabel(String name) => _firestoreService.addLabel(name);
   Future<void> deleteLabel(String name) => _firestoreService.deleteLabel(name);
 
+  Future<void> togglePin(Note note) async {
+    final updatedNote = note.copyWith(isPinned: !note.isPinned);
+    await _firestoreService.updateNote(updatedNote);
+  }
+
+  Future<void> toggleFavorite(Note note) async {
+    final updatedNote = note.copyWith(isFavorite: !note.isFavorite);
+    await _firestoreService.updateNote(updatedNote);
+  }
+
+  Future<void> toggleArchive(Note note) async {
+    final updatedNote = note.copyWith(isArchived: !note.isArchived);
+    await _firestoreService.updateNote(updatedNote);
+  }
+
+  Future<void> moveToTrash(Note note) async {
+    await _firestoreService.moveToTrash(note.id);
+  }
+
+  Future<void> addLabelToNote(Note note, String label) async {
+    if (!note.labels.contains(label)) {
+      final updatedLabels = List<String>.from(note.labels)..add(label);
+      final updatedNote = note.copyWith(labels: updatedLabels);
+      await _firestoreService.updateNote(updatedNote);
+    }
+  }
+
+  Future<void> removeLabelFromNote(Note note, String label) async {
+    if (note.labels.contains(label)) {
+      final updatedLabels = List<String>.from(note.labels)..remove(label);
+      final updatedNote = note.copyWith(labels: updatedLabels);
+      await _firestoreService.updateNote(updatedNote);
+    }
+  }
+
   // Archive Operations
   // Note: These are now superseded by the RxLists above, but keeping them as streams if needed
   Stream<List<Note>> get archivedNotesStream => _firestoreService.getNotes(isArchived: true, isDeleted: false);

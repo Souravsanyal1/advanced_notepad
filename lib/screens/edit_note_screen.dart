@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:get/get.dart';
 import '../controllers/note_controller.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 
 class EditNoteScreen extends StatefulWidget {
   final Note? note;
@@ -746,24 +747,31 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                   runSpacing: 10,
                   children: availableLabels.map((label) {
                     final isSelected = _selectedLabels.contains(label);
-                    return FilterChip(
-                      label: Text(label),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedLabels.add(label);
-                          } else {
-                            _selectedLabels.remove(label);
-                          }
-                        });
-                        setModalState(() {});
-                        _updateFirestoreIfExisting();
+                    return GestureDetector(
+                      onLongPress: () {
+                        HapticFeedback.heavyImpact();
+                        Navigator.pop(context); // Close label picker bottom sheet
+                        _showDeleteLabelDialog(label);
                       },
-                      selectedColor: Colors.blue.withOpacity(0.2),
-                      checkmarkColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      child: FilterChip(
+                        label: Text(label),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _selectedLabels.add(label);
+                            } else {
+                              _selectedLabels.remove(label);
+                            }
+                          });
+                          setModalState(() {});
+                          _updateFirestoreIfExisting();
+                        },
+                        selectedColor: Colors.blue.withValues(alpha: 0.2),
+                        checkmarkColor: Colors.blue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     );
                   }).toList(),
@@ -821,5 +829,38 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       }
     }
     return null;
+  }
+
+  void _showDeleteLabelDialog(String labelName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Label'),
+        content: Text('Are you sure you want to delete the label "$labelName"? This will remove it from all notes.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _noteController.deleteLabel(labelName);
+              setState(() {
+                _selectedLabels.remove(labelName);
+              });
+              Get.snackbar(
+                'Label Deleted',
+                'Label "$labelName" has been removed',
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: Colors.red.withValues(alpha: 0.1),
+                colorText: Colors.red,
+              );
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 }

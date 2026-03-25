@@ -27,7 +27,6 @@ class _AppDrawerState extends State<AppDrawer> {
 
   String? _profileImageUrl;
   String _userName = 'Advanced User';
-  String _userEmail = 'premium@advanced.com';
   bool _isUploadingProfile = false;
 
   @override
@@ -46,12 +45,10 @@ class _AppDrawerState extends State<AppDrawer> {
   Future<void> _loadProfileData() async {
     final url = await _profileService.getProfilePhoto();
     final name = await _profileService.getUserName();
-    final email = await _profileService.getUserEmail();
     if (mounted) {
       setState(() {
         _profileImageUrl = url;
         _userName = name;
-        _userEmail = email;
       });
     }
   }
@@ -140,33 +137,6 @@ class _AppDrawerState extends State<AppDrawer> {
     }
   }
 
-  void _editEmail() async {
-    final controller = TextEditingController(text: _userEmail);
-    final newEmail = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Email'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: 'Enter your email'),
-          autofocus: true,
-          keyboardType: TextInputType.emailAddress,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-
-    if (newEmail != null && newEmail.isNotEmpty) {
-      await _profileService.setUserEmail(newEmail);
-      setState(() => _userEmail = newEmail);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -239,20 +209,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 ),
               ],
             ),
-            accountEmail: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _userEmail,
-                  style: GoogleFonts.outfit(fontSize: 14, color: Colors.white.withValues(alpha: 0.9)),
-                ),
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: _editEmail,
-                  child: const Icon(Icons.alternate_email_rounded, size: 16, color: Colors.white70),
-                ),
-              ],
-            ),
+            accountEmail: null,
           ),
           Obx(() => _DrawerItem(
             icon: Icons.notes_rounded,

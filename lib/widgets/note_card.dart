@@ -7,8 +7,9 @@ import 'dart:io';
 class NoteCard extends StatelessWidget {
   final Note note;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
-  const NoteCard({super.key, required this.note, required this.onTap});
+  const NoteCard({super.key, required this.note, required this.onTap, this.onLongPress});
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +32,7 @@ class NoteCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(12.0),

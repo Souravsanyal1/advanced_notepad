@@ -83,9 +83,18 @@ class FirestoreService {
   }
 
   Future<void> deleteLabel(String name) async {
+    // 1. Delete from explicit labels collection
     final docs = await _labelsCollection.where('name', isEqualTo: name).get();
     for (var doc in docs.docs) {
       await doc.reference.delete();
+    }
+
+    // 2. Remove from all notes that use this label
+    final notesWithLabel = await _notesCollection.where('labels', arrayContains: name).get();
+    for (var doc in notesWithLabel.docs) {
+      await doc.reference.update({
+        'labels': FieldValue.arrayRemove([name])
+      });
     }
   }
 
