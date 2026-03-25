@@ -1,7 +1,8 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class DeveloperInfoScreen extends StatefulWidget {
   const DeveloperInfoScreen({super.key});
@@ -10,22 +11,33 @@ class DeveloperInfoScreen extends StatefulWidget {
   State<DeveloperInfoScreen> createState() => _DeveloperInfoScreenState();
 }
 
-class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _rotationController;
+class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerProviderStateMixin {
+  late TabController _tabController;
+  final GlobalKey _tabKey = GlobalKey();
+  final GlobalKey _skillsKey = GlobalKey();
+  final GlobalKey _socialsKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _rotationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 5),
-    )..repeat();
+    _tabController = TabController(length: 3, vsync: this);
+    
+    // Start showcase after frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ShowcaseView.get().startShowCase([_tabKey, _skillsKey, _socialsKey]);
+    });
   }
 
   @override
   void dispose() {
-    _rotationController.dispose();
+    _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleRefresh() async {
+    // Simulate a network delay
+    await Future.delayed(const Duration(seconds: 1));
+    if (mounted) setState(() {});
   }
 
   @override
@@ -34,25 +46,21 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with SingleTi
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      body: CustomScrollView(
-        slivers: [
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
-            expandedHeight: 220,
+            expandedHeight: 240,
             pinned: true,
+            stretch: true,
+            backgroundColor: theme.colorScheme.surface,
             flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                'Developer Info',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+              stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.secondary,
+                      theme.colorScheme.primary.withValues(alpha: 0.8),
+                      theme.colorScheme.secondary.withValues(alpha: 0.8),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -61,54 +69,42 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with SingleTi
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Advanced Rainbow Rotating Background
-                    AnimatedBuilder(
-                      animation: _rotationController,
-                      builder: (context, child) {
-                        return Transform.rotate(
-                          angle: _rotationController.value * 2 * math.pi,
-                          child: Container(
-                            width: 140,
-                            height: 140,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: SweepGradient(
-                                colors: [
-                                  Color(0xFF833AB4), // Purple
-                                  Color(0xFFC13584), // Pinkish-Purple
-                                  Color(0xFFE1306C), // Pink/Red
-                                  Color(0xFFFD1D1D), // Red
-                                  Color(0xFFF56040), // Orange/Red
-                                  Color(0xFFF77737), // Orange
-                                  Color(0xFFFCB045), // Yellow/Orange
-                                  Color(0xFFFFDC80), // Yellow
-                                  Color(0xFF833AB4), // Back to Purple for seamless loop
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    // Blur overlay for glow effect
+                    // Moving ambient blobs for a modern look
+                    _buildAmbientBlob(theme, 100, -50, -30),
+                    _buildAmbientBlob(theme, 80, 60, 40),
+                    
+                    // Static Rainbow Border (Rotation removed as per user request)
                     Container(
-                      width: 130,
-                      height: 130,
-                      decoration: BoxDecoration(
+                      width: 150,
+                      height: 150,
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: theme.colorScheme.surface.withValues(alpha: 0.1),
+                        gradient: SweepGradient(
+                          colors: [
+                            Color(0xFF833AB4), Color(0xFFC13584), Color(0xFFE1306C),
+                            Color(0xFFFD1D1D), Color(0xFFF56040), Color(0xFFF77737),
+                            Color(0xFFFCB045), Color(0xFFFFDC80), Color(0xFF833AB4),
+                          ],
+                        ),
                       ),
                     ),
                     Hero(
                       tag: 'dev_avatar',
                       child: Container(
                         padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            )
+                          ],
                         ),
                         child: const CircleAvatar(
-                          radius: 55,
+                          radius: 65,
                           backgroundColor: Colors.white,
                           backgroundImage: AssetImage('assets/dev_photo.png'),
                         ),
@@ -119,120 +115,301 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with SingleTi
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Sourav Sanyal',
-                    style: GoogleFonts.outfit(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  Text(
-                    'Full-Stack Flutter Developer',
-                    style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(context, 'About Me'),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    child: Text(
-                      'A passionate software engineer specializing in building high-performance, beautiful, and user-centric mobile applications using Flutter and Firebase. I love creating seamless experiences that delight users.',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                        height: 1.6,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  _buildSectionTitle(context, 'Connect With Me'),
-                  const SizedBox(height: 16),
-                  _buildSocialTile(
-                    context,
-                    icon: Icons.alternate_email_rounded,
-                    label: 'Email',
-                    value: 'sourav.sanyal.dev@gmail.com',
-                    gradient: const [Color(0xFFEA4335), Color(0xFFC5221F)],
-                    onTap: () => _launchURL('mailto:sourav.sanyal.dev@gmail.com?subject=Advanced%20Notepad%20Feedback'),
-                  ),
-                  _buildSocialTile(
-                    context,
-                    icon: Icons.code_rounded,
-                    label: 'GitHub',
-                    value: 'github.com/Souravsanyal1',
-                    gradient: const [Color(0xFF24292E), Color(0xFF404448)],
-                    onTap: () => _launchURL('https://github.com/Souravsanyal1'),
-                  ),
-                  _buildSocialTile(
-                    context,
-                    icon: Icons.language_rounded,
-                    label: 'Portfolio',
-                    value: 'sourav-sanyal.pro.bd',
-                    gradient: const [Color(0xFF4285F4), Color(0xFF34A853)],
-                    onTap: () => _launchURL('https://sourav-sanyal.pro.bd'),
-                  ),
-                  const SizedBox(height: 40),
-                  _buildFooter(context),
-                ],
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _SliverAppBarDelegate(
+              Showcase(
+                key: _tabKey,
+                title: 'Navigation',
+                description: 'Switch between About, Skills, and Socials to learn more.',
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: theme.colorScheme.primary,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: theme.colorScheme.primary,
+                  indicatorWeight: 3,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  tabs: const [
+                    Tab(text: 'About'),
+                    Tab(text: 'Skills'),
+                    Tab(text: 'Socials'),
+                  ],
+                ),
               ),
+              theme.colorScheme.surface,
             ),
           ),
+        ],
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildAboutTab(theme),
+            _buildSkillsTab(theme),
+            _buildSocialsTab(theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAmbientBlob(ThemeData theme, double size, double top, double left) {
+    return Positioned(
+      top: top,
+      left: left,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.1),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAboutTab(ThemeData theme) {
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      child: AnimationLimiter(
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: AnimationConfiguration.toStaggeredList(
+            duration: const Duration(milliseconds: 500),
+            childAnimationBuilder: (widget) => SlideAnimation(
+              verticalOffset: 50.0,
+              child: FadeInAnimation(child: widget),
+            ),
+            children: [
+              Text(
+                'Sourav Sanyal',
+                style: GoogleFonts.outfit(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              Text(
+                'Full-Stack Flutter Developer',
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildInfoCard(
+                theme,
+                title: 'BIO',
+                content: 'A passionate software engineer specializing in building high-performance, beautiful, and user-centric mobile applications using Flutter and Firebase. I love creating seamless experiences that delight users and solve real-world problems through clean code and modern architecture.',
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(child: _buildStatCard(theme, 'Experience', '4+ Years')),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildStatCard(theme, 'Projects', '50+')),
+                ],
+              ),
+              const SizedBox(height: 40),
+              _buildFooter(theme),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkillsTab(ThemeData theme) {
+    final skills = [
+      {'name': 'Flutter', 'icon': Icons.bolt, 'color': Colors.blue},
+      {'name': 'Dart', 'icon': Icons.code, 'color': Colors.cyan},
+      {'name': 'Firebase', 'icon': Icons.cloud, 'color': Colors.orange},
+      {'name': 'Node.js', 'icon': Icons.javascript, 'color': Colors.green},
+      {'name': 'UI/UX Design', 'icon': Icons.brush, 'color': Colors.pink},
+      {'name': 'Git/GitHub', 'icon': Icons.hub, 'color': Colors.black},
+      {'name': 'REST API', 'icon': Icons.api, 'color': Colors.purple},
+      {'name': 'State Mgmt', 'icon': Icons.layers, 'color': Colors.indigo},
+    ];
+
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      child: AnimationLimiter(
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            Showcase(
+              key: _skillsKey,
+              title: 'Skills',
+              description: 'Explore the technical expertise and technologies used in development.',
+              child: Text(
+                'Technical Expertise',
+                style: GoogleFonts.outfit(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 2.5,
+              ),
+              itemCount: skills.length,
+              itemBuilder: (context, index) {
+                final skill = skills[index];
+                return AnimationConfiguration.staggeredGrid(
+                  position: index,
+                  duration: const Duration(milliseconds: 500),
+                  columnCount: 2,
+                  child: ScaleAnimation(
+                    child: FadeInAnimation(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 5,
+                              offset: const Offset(0, 2),
+                            )
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 12),
+                            Icon(skill['icon'] as IconData, color: skill['color'] as Color, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                skill['name'] as String,
+                                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialsTab(ThemeData theme) {
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      child: AnimationLimiter(
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: AnimationConfiguration.toStaggeredList(
+            duration: const Duration(milliseconds: 500),
+            childAnimationBuilder: (widget) => SlideAnimation(
+              horizontalOffset: 50.0,
+              child: FadeInAnimation(child: widget),
+            ),
+            children: [
+              Showcase(
+                key: _socialsKey,
+                title: 'Get in Touch',
+                description: 'Connect with me on various platforms for collaboration.',
+                child: _buildSocialTile(
+                  theme,
+                  icon: Icons.alternate_email_rounded,
+                  label: 'Email',
+                  value: 'sourav.sanyal.dev@gmail.com',
+                  gradient: const [Color(0xFFEA4335), Color(0xFFC5221F)],
+                  onTap: () => _launchURL('mailto:sourav.sanyal.dev@gmail.com?subject=Advanced%20Notepad%20Feedback'),
+                ),
+              ),
+              _buildSocialTile(
+                theme,
+                icon: Icons.code_rounded,
+                label: 'GitHub',
+                value: 'github.com/Souravsanyal1',
+                gradient: const [Color(0xFF24292E), Color(0xFF404448)],
+                onTap: () => _launchURL('https://github.com/Souravsanyal1'),
+              ),
+              _buildSocialTile(
+                theme,
+                icon: Icons.language_rounded,
+                label: 'Portfolio',
+                value: 'sourav-sanyal.pro.bd',
+                gradient: const [Color(0xFF4285F4), Color(0xFF34A853)],
+                onTap: () => _launchURL('https://sourav-sanyal.pro.bd'),
+              ),
+              const SizedBox(height: 24),
+              _buildInfoCard(
+                theme,
+                title: 'COLLABORATION',
+                content: 'Interesed in working together? Feel free to reach out for projects, consultations, or just a tech chat! I\'m always open to discussing new ideas and opportunities.',
+                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.05),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(ThemeData theme, {required String title, required String content, Color? backgroundColor}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: backgroundColor ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: theme.textTheme.labelSmall?.copyWith(letterSpacing: 2.0, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+          const SizedBox(height: 8),
+          Text(content, style: theme.textTheme.bodyMedium?.copyWith(height: 1.6, color: theme.colorScheme.onSurfaceVariant)),
         ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 16,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          title.toUpperCase(),
-          style: GoogleFonts.outfit(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2.0,
-            color: Colors.grey,
-          ),
-        ),
-      ],
+  Widget _buildStatCard(ThemeData theme, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 5))
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(value, style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+          const SizedBox(height: 4),
+          Text(label, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+        ],
+      ),
     );
   }
 
   Widget _buildSocialTile(
-    BuildContext context, {
+    ThemeData theme, {
     required IconData icon,
     required String label,
     required String value,
     required List<Color> gradient,
     required VoidCallback onTap,
   }) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: InkWell(
@@ -243,15 +420,9 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with SingleTi
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.1),
-            ),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
             boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),
           child: Row(
@@ -259,11 +430,7 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with SingleTi
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: gradient,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, size: 24, color: Colors.white),
@@ -273,28 +440,12 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with SingleTi
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      label,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      value,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                    Text(label, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey, fontWeight: FontWeight.w500)),
+                    Text(value, style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 16)),
                   ],
                 ),
               ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: theme.colorScheme.primary.withValues(alpha: 0.5),
-              ),
+              Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.colorScheme.primary.withValues(alpha: 0.5)),
             ],
           ),
         ),
@@ -302,34 +453,24 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with SingleTi
     );
   }
 
-  Widget _buildFooter(BuildContext context) {
-    final theme = Theme.of(context);
+  Widget _buildFooter(ThemeData theme) {
     return Center(
       child: Column(
         children: [
-          Text(
-            'Crafted with passion using',
-            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
-          ),
-          const SizedBox(height: 8),
+          Text('Crafted with passion using', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: theme.colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.flash_on, size: 18, color: Color(0xFF4285F4)),
                 const SizedBox(width: 8),
-                Text(
-                  'Flutter & Firebase',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
+                Text('Flutter & Firebase', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
               ],
             ),
           ),
@@ -343,5 +484,42 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with SingleTi
     if (!await launchUrl(uri)) {
       throw Exception('Could not launch $url');
     }
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate(this.child, this.backgroundColor);
+
+  final Widget child;
+  final Color backgroundColor;
+
+  @override
+  double get minExtent {
+    if (child is PreferredSizeWidget) {
+      return (child as PreferredSizeWidget).preferredSize.height;
+    }
+    if (child is Showcase) {
+      final showcase = child as Showcase;
+      if (showcase.child is PreferredSizeWidget) {
+        return (showcase.child as PreferredSizeWidget).preferredSize.height;
+      }
+    }
+    return 48; // Default fallback
+  }
+
+  @override
+  double get maxExtent => minExtent;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: backgroundColor,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return true;
   }
 }

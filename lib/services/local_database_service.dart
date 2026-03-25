@@ -110,6 +110,8 @@ class LocalDatabaseService {
     }
   }
 
+  Note? getNote(String id) => _notesBox.get(id);
+
   Stream<int> getNoteCount() {
     return _notesBox.watch().map((_) => _notesBox.values.where((n) => !n.isDeleted).length)
         .startWith(_notesBox.values.where((n) => !n.isDeleted).length);

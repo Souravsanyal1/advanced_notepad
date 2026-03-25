@@ -43,6 +43,7 @@ void main() async {
   Get.put(NoteController());
   
   runApp(
+    // ignore: deprecated_member_use
     ShowCaseWidget(
       builder: (context) => const MyApp(),
     ),

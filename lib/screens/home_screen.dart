@@ -74,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _showFeatureDiscovery() async {
     final isFirstLaunch = !Get.isRegistered<bool>(tag: 'showcase_shown');
     if (isFirstLaunch) {
-      ShowCaseWidget.of(context).startShowCase([
+      ShowcaseView.get().startShowCase([
         _menuKey,
         _labelKey,
         _searchKey,
@@ -529,46 +529,48 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _showLabelSelectionDialog(Note note) {
+    // Use an RxSet for local selection state to ensure reactive UI updates in the dialog
+    final selectedLabels = RxSet<String>(note.labels.toSet());
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Select Labels'),
-        content: StatefulBuilder(
-          builder: (context, setDialogState) => SizedBox(
-            width: double.maxFinite,
-            child: Obx(() => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ..._noteController.labels.map((label) {
-                  final isSelected = note.labels.contains(label);
-                  return GestureDetector(
-                    onLongPress: () {
-                      HapticFeedback.heavyImpact();
-                      Navigator.pop(context); // Close selection dialog
-                      _showDeleteLabelDialog(label);
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Obx(() => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ..._noteController.labels.map((label) {
+                final isSelected = selectedLabels.contains(label);
+                return GestureDetector(
+                  onLongPress: () {
+                    HapticFeedback.heavyImpact();
+                    Navigator.pop(context); // Close selection dialog
+                    _showDeleteLabelDialog(label);
+                  },
+                  child: CheckboxListTile(
+                    title: Text(label),
+                    value: isSelected,
+                    onChanged: (value) async {
+                      if (value == true) {
+                        selectedLabels.add(label);
+                        await _noteController.addLabelToNote(note, label);
+                      } else {
+                        selectedLabels.remove(label);
+                        await _noteController.removeLabelFromNote(note, label);
+                      }
                     },
-                    child: CheckboxListTile(
-                      title: Text(label),
-                      value: isSelected,
-                      onChanged: (value) async {
-                        if (value == true) {
-                          await _noteController.addLabelToNote(note, label);
-                        } else {
-                          await _noteController.removeLabelFromNote(note, label);
-                        }
-                        setDialogState(() {}); // Trigger local rebuild
-                      },
-                    ),
-                  );
-                }),
-                if (_noteController.labels.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text('No labels created yet.'),
                   ),
-              ],
-            )),
-          ),
+                );
+              }),
+              if (_noteController.labels.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No labels created yet.'),
+                ),
+            ],
+          )),
         ),
         actions: [
           TextButton(

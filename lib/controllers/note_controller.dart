@@ -167,18 +167,22 @@ class NoteController extends GetxController {
   }
 
   Future<void> addLabelToNote(Note note, String label) async {
-    if (!note.labels.contains(label)) {
-      final updatedLabels = List<String>.from(note.labels)..add(label);
-      final updatedNote = note.copyWith(labels: updatedLabels);
+    // Refresh note to get latest labels and prevent stale data overwrites
+    final latestNote = _dbService.getNote(note.id) ?? note;
+    if (!latestNote.labels.contains(label)) {
+      final updatedLabels = List<String>.from(latestNote.labels)..add(label);
+      final updatedNote = latestNote.copyWith(labels: updatedLabels);
       await _dbService.updateNote(updatedNote);
       _firestoreService.syncNote(updatedNote);
     }
   }
 
   Future<void> removeLabelFromNote(Note note, String label) async {
-    if (note.labels.contains(label)) {
-      final updatedLabels = List<String>.from(note.labels)..remove(label);
-      final updatedNote = note.copyWith(labels: updatedLabels);
+    // Refresh note to get latest labels and prevent stale data overwrites
+    final latestNote = _dbService.getNote(note.id) ?? note;
+    if (latestNote.labels.contains(label)) {
+      final updatedLabels = List<String>.from(latestNote.labels)..remove(label);
+      final updatedNote = latestNote.copyWith(labels: updatedLabels);
       await _dbService.updateNote(updatedNote);
       _firestoreService.syncNote(updatedNote);
     }
