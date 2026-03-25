@@ -26,6 +26,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   final NoteController _noteController = Get.find<NoteController>();
   final ProfileService _profileService = ProfileService();
+  final PageController _pageController = PageController();
+  final ScrollController _labelScrollController = ScrollController();
   final RxString _searchQuery = ''.obs;
   String? _profileImageUrl;
 
@@ -60,6 +62,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       final String? routeLabel = ModalRoute.of(context)?.settings.arguments as String?;
       if (routeLabel != null) {
         _noteController.setSelectedLabel(routeLabel);
+        final labels = ['All', ..._noteController.labels];
+        final index = labels.indexOf(routeLabel);
+        if (index != -1) {
+          _pageController.jumpToPage(index);
+        }
       }
     });
   }
@@ -82,6 +89,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     _profileService.removeListener(_loadProfile);
+    _pageController.dispose();
+    _labelScrollController.dispose();
     super.dispose();
   }
 
@@ -219,163 +228,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
           ],
-          body: RefreshIndicator(
-            onRefresh: () async {
-              HapticFeedback.mediumImpact();
-              await _noteController.fetchNotes();
-            },
-            child: Obx(() {
-              if (_noteController.isLoading.value) {
-                return const NoteGridShimmer();
-              }
-
-              final notes = _noteController.filteredNotes.where((note) {
-                if (_searchQuery.value.isEmpty) return true;
-                return note.title.toLowerCase().contains(_searchQuery.value.toLowerCase()) ||
-                    note.content.toLowerCase().contains(_searchQuery.value.toLowerCase());
-              }).toList();
-
-              if (notes.isEmpty) {
-                return SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.6,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(Icons.edit_note_rounded, size: 80, color: theme.colorScheme.primary),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            _searchQuery.value.isEmpty ? 'Begin your journey' : 'No matches found',
-                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _searchQuery.value.isEmpty ? 'Tap the button below to create a note' : 'Try a different keyword',
-                            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+          body: Obx(() {
+            final categories = ['All', ..._noteController.labels];
+            
+            return PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) {
+                HapticFeedback.selectionClick();
+                final label = categories[index];
+                _noteController.setSelectedLabel(label == 'All' ? null : label);
+                
+                // Keep label selector in sync
+                _scrollToLabel(index);
+              },
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final currentLabel = categories[index];
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    HapticFeedback.mediumImpact();
+                    await _noteController.fetchNotes();
+                  },
+                  child: _buildNotesContent(theme, currentLabel),
                 );
-              }
-
-              final pinnedNotes = notes.where((n) => n.isPinned).toList();
-              final otherNotes = notes.where((n) => !n.isPinned).toList();
-
-              return AnimationLimiter(
-                child: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    if (pinnedNotes.isNotEmpty) ...[
-                      const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                          child: Text('PINNED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        sliver: SliverGrid.count(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 0.85,
-                          children: pinnedNotes.map((note) {
-                            final index = pinnedNotes.indexOf(note);
-                            return AnimationConfiguration.staggeredGrid(
-                              position: index,
-                              duration: const Duration(milliseconds: 400),
-                              columnCount: 2,
-                              child: ScaleAnimation(
-                                child: FadeInAnimation(
-                                  child: OpenContainer(
-                                    transitionDuration: const Duration(milliseconds: 500),
-                                    openColor: Color(note.color),
-                                    closedColor: Colors.transparent,
-                                    closedElevation: 0,
-                                    openElevation: 0,
-                                    closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                    openBuilder: (context, action) => EditNoteScreen(note: note),
-                                    closedBuilder: (context, action) => NoteCard(
-                                      note: note, 
-                                      onTap: action,
-                                      onLongPress: () {
-                                        HapticFeedback.mediumImpact();
-                                        _showNoteOptions(note);
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ],
-                    if (otherNotes.isNotEmpty) ...[
-                      const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-                          child: Text('OTHERS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        sliver: SliverGrid.count(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 0.85,
-                          children: otherNotes.map((note) {
-                            final index = otherNotes.indexOf(note);
-                            final staggeredIndex = index + pinnedNotes.length;
-                            return AnimationConfiguration.staggeredGrid(
-                              position: staggeredIndex,
-                              duration: const Duration(milliseconds: 400),
-                              columnCount: 2,
-                              child: SlideAnimation(
-                                verticalOffset: 50.0,
-                                child: FadeInAnimation(
-                                  child: OpenContainer(
-                                    transitionDuration: const Duration(milliseconds: 500),
-                                    openColor: Color(note.color),
-                                    closedColor: Colors.transparent,
-                                    closedElevation: 0,
-                                    openElevation: 0,
-                                    closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                    openBuilder: (context, action) => EditNoteScreen(note: note),
-                                    closedBuilder: (context, action) => NoteCard(
-                                      note: note, 
-                                      onTap: action,
-                                      onLongPress: () {
-                                        HapticFeedback.mediumImpact();
-                                        _showNoteOptions(note);
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ],
-                    const SliverToBoxAdapter(child: SizedBox(height: 80)),
-                  ],
-                ),
-              );
-            }),
-          ),
+              },
+            );
+          }),
         ),
       ),
       floatingActionButton: Showcase(
@@ -405,6 +283,178 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
       ),
     );
+  }
+
+  Widget _buildNotesContent(ThemeData theme, String currentLabel) {
+    return Obx(() {
+      if (_noteController.isLoading.value) {
+        return const NoteGridShimmer();
+      }
+
+      // Filter notes based on both the PageView's currentLabel AND the search query
+      // Note: _noteController.filteredNotes already accounts for selectedLabel, 
+      // but since we are in a PageView, we want to show notes for 'currentLabel'
+      final allNotesForCategory = _noteController.allNotes.where((note) {
+        if (currentLabel == 'All') return !note.isDeleted && !note.isArchived;
+        return note.labels.contains(currentLabel) && !note.isDeleted && !note.isArchived;
+      }).toList();
+
+      final notes = allNotesForCategory.where((note) {
+        if (_searchQuery.value.isEmpty) return true;
+        return note.title.toLowerCase().contains(_searchQuery.value.toLowerCase()) ||
+            note.content.toLowerCase().contains(_searchQuery.value.toLowerCase());
+      }).toList();
+
+      if (notes.isEmpty) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.edit_note_rounded, size: 80, color: theme.colorScheme.primary),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    _searchQuery.value.isEmpty ? 'Begin your journey' : 'No matches found',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _searchQuery.value.isEmpty ? 'Tap the button below to create a note' : 'Try a different keyword',
+                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
+      final pinnedNotes = notes.where((n) => n.isPinned).toList();
+      final otherNotes = notes.where((n) => !n.isPinned).toList();
+
+      return AnimationLimiter(
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            if (pinnedNotes.isNotEmpty) ...[
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text('PINNED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                sliver: SliverGrid.count(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 0.85,
+                  children: pinnedNotes.map((note) {
+                    final index = pinnedNotes.indexOf(note);
+                    return AnimationConfiguration.staggeredGrid(
+                      position: index,
+                      duration: const Duration(milliseconds: 400),
+                      columnCount: 2,
+                      child: ScaleAnimation(
+                        child: FadeInAnimation(
+                          child: OpenContainer(
+                            transitionDuration: const Duration(milliseconds: 500),
+                            openColor: Color(note.color),
+                            closedColor: Colors.transparent,
+                            closedElevation: 0,
+                            openElevation: 0,
+                            closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                            openBuilder: (context, action) => EditNoteScreen(note: note),
+                            closedBuilder: (context, action) => NoteCard(
+                              note: note, 
+                              onTap: action,
+                              onLongPress: () {
+                                HapticFeedback.mediumImpact();
+                                _showNoteOptions(note);
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+            if (otherNotes.isNotEmpty) ...[
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+                  child: Text('OTHERS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                sliver: SliverGrid.count(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 0.85,
+                  children: otherNotes.map((note) {
+                    final index = otherNotes.indexOf(note);
+                    final staggeredIndex = index + pinnedNotes.length;
+                    return AnimationConfiguration.staggeredGrid(
+                      position: staggeredIndex,
+                      duration: const Duration(milliseconds: 400),
+                      columnCount: 2,
+                      child: SlideAnimation(
+                        verticalOffset: 50.0,
+                        child: FadeInAnimation(
+                          child: OpenContainer(
+                            transitionDuration: const Duration(milliseconds: 500),
+                            openColor: Color(note.color),
+                            closedColor: Colors.transparent,
+                            closedElevation: 0,
+                            openElevation: 0,
+                            closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                            openBuilder: (context, action) => EditNoteScreen(note: note),
+                            closedBuilder: (context, action) => NoteCard(
+                              note: note, 
+                              onTap: action,
+                              onLongPress: () {
+                                HapticFeedback.mediumImpact();
+                                _showNoteOptions(note);
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+            const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          ],
+        ),
+      );
+    });
+  }
+
+  void _scrollToLabel(int index) {
+    if (_labelScrollController.hasClients) {
+      _labelScrollController.animateTo(
+        index * 100.0, // Rough estimate, will work reasonably well
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   void _showNoteOptions(Note note) {
@@ -539,6 +589,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         height: 70,
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: ListView.builder(
+          controller: _labelScrollController,
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -550,12 +601,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             return Padding(
               padding: const EdgeInsets.only(right: 12),
               child: InkWell(
-                onTap: () {
-                  if (!isSelected) {
-                    HapticFeedback.lightImpact();
-                    _noteController.setSelectedLabel(label == 'All' ? null : label);
-                  }
-                },
+                  onTap: () {
+                    if (!isSelected) {
+                      HapticFeedback.lightImpact();
+                      _pageController.animateToPage(
+                        index,
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeInOut,
+                      );
+                      // selectedLabel is updated via onPageChanged
+                    }
+                  },
                 onLongPress: label == 'All' ? null : () {
                   HapticFeedback.heavyImpact();
                   _showDeleteLabelDialog(label);
