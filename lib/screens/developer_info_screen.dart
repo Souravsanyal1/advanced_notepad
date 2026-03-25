@@ -49,34 +49,49 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
-            expandedHeight: 240,
+            expandedHeight: 280,
             pinned: true,
             stretch: true,
             backgroundColor: theme.colorScheme.surface,
+            elevation: 0,
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      theme.colorScheme.primary.withValues(alpha: 0.8),
-                      theme.colorScheme.secondary.withValues(alpha: 0.8),
+                      theme.colorScheme.primary.withValues(alpha: 1.0),
+                      theme.colorScheme.secondary.withValues(alpha: 0.9),
+                      theme.colorScheme.surface,
                     ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
                 ),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
                     // Moving ambient blobs for a modern look
-                    _buildAmbientBlob(theme, 100, -50, -30),
-                    _buildAmbientBlob(theme, 80, 60, 40),
+                    _buildAmbientBlob(theme, 160, -20, -40, Colors.white.withValues(alpha: 0.1)),
+                    _buildAmbientBlob(theme, 120, 100, 200, theme.colorScheme.secondary.withValues(alpha: 0.1)),
                     
-                    // Static Rainbow Border (Rotation removed as per user request)
+                    // Static Rainbow Border
                     Container(
-                      width: 150,
-                      height: 150,
+                      width: 160,
+                      height: 160,
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: SweepGradient(
@@ -91,20 +106,20 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
                     Hero(
                       tag: 'dev_avatar',
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surface,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
                             )
                           ],
                         ),
                         child: const CircleAvatar(
-                          radius: 65,
+                          radius: 70,
                           backgroundColor: Colors.white,
                           backgroundImage: AssetImage('assets/dev_photo.png'),
                         ),
@@ -152,7 +167,7 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
     );
   }
 
-  Widget _buildAmbientBlob(ThemeData theme, double size, double top, double left) {
+  Widget _buildAmbientBlob(ThemeData theme, double size, double top, double left, Color color) {
     return Positioned(
       top: top,
       left: left,
@@ -161,7 +176,7 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: 0.1),
+          color: color,
         ),
       ),
     );
@@ -271,13 +286,13 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
                       child: Container(
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 5,
-                              offset: const Offset(0, 2),
+                              color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             )
                           ],
                         ),
@@ -374,8 +389,8 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: theme.textTheme.labelSmall?.copyWith(letterSpacing: 2.0, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-          const SizedBox(height: 8),
-          Text(content, style: theme.textTheme.bodyMedium?.copyWith(height: 1.6, color: theme.colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 12),
+          Text(content, style: theme.textTheme.bodyMedium?.copyWith(height: 1.8, color: theme.colorScheme.onSurface, letterSpacing: 0.2)),
         ],
       ),
     );
@@ -386,17 +401,29 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
       padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 5))
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          )
         ],
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.surface,
+            theme.colorScheme.primary.withValues(alpha: 0.02),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
       child: Column(
         children: [
-          Text(value, style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-          const SizedBox(height: 4),
-          Text(label, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+          Text(value, style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+          const SizedBox(height: 6),
+          Text(label, style: theme.textTheme.labelMedium?.copyWith(color: Colors.grey, fontWeight: FontWeight.w500)),
         ],
       ),
     );
