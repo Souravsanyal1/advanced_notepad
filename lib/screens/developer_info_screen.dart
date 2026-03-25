@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 class DeveloperInfoScreen extends StatefulWidget {
   const DeveloperInfoScreen({super.key});
@@ -13,19 +12,10 @@ class DeveloperInfoScreen extends StatefulWidget {
 
 class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-  final GlobalKey _tabKey = GlobalKey();
-  final GlobalKey _skillsKey = GlobalKey();
-  final GlobalKey _socialsKey = GlobalKey();
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
-    // Start showcase after frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ShowcaseView.get().startShowCase([_tabKey, _skillsKey, _socialsKey]);
-    });
   }
 
   @override
@@ -133,23 +123,18 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
           SliverPersistentHeader(
             pinned: true,
             delegate: _SliverAppBarDelegate(
-              Showcase(
-                key: _tabKey,
-                title: 'Navigation',
-                description: 'Switch between About, Skills, and Socials to learn more.',
-                child: TabBar(
-                  controller: _tabController,
-                  labelColor: theme.colorScheme.primary,
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: theme.colorScheme.primary,
-                  indicatorWeight: 3,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  tabs: const [
-                    Tab(text: 'About'),
-                    Tab(text: 'Skills'),
-                    Tab(text: 'Socials'),
-                  ],
-                ),
+              TabBar(
+                controller: _tabController,
+                labelColor: theme.colorScheme.primary,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: theme.colorScheme.primary,
+                indicatorWeight: 3,
+                indicatorSize: TabBarIndicatorSize.label,
+                tabs: const [
+                  Tab(text: 'About'),
+                  Tab(text: 'Skills'),
+                  Tab(text: 'Socials'),
+                ],
               ),
               theme.colorScheme.surface,
             ),
@@ -252,16 +237,11 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            Showcase(
-              key: _skillsKey,
-              title: 'Skills',
-              description: 'Explore the technical expertise and technologies used in development.',
-              child: Text(
-                'Technical Expertise',
-                style: GoogleFonts.outfit(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+            Text(
+              'Technical Expertise',
+              style: GoogleFonts.outfit(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
@@ -334,18 +314,13 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
               child: FadeInAnimation(child: widget),
             ),
             children: [
-              Showcase(
-                key: _socialsKey,
-                title: 'Get in Touch',
-                description: 'Connect with me on various platforms for collaboration.',
-                child: _buildSocialTile(
-                  theme,
-                  icon: Icons.alternate_email_rounded,
-                  label: 'Email',
-                  value: 'sourav.sanyal.dev@gmail.com',
-                  gradient: const [Color(0xFFEA4335), Color(0xFFC5221F)],
-                  onTap: () => _launchURL('mailto:sourav.sanyal.dev@gmail.com?subject=Advanced%20Notepad%20Feedback'),
-                ),
+              _buildSocialTile(
+                theme,
+                icon: Icons.alternate_email_rounded,
+                label: 'Email',
+                value: 'sourav.sanyal.dev@gmail.com',
+                gradient: const [Color(0xFFEA4335), Color(0xFFC5221F)],
+                onTap: () => _launchURL('mailto:sourav.sanyal.dev@gmail.com?subject=Advanced%20Notepad%20Feedback'),
               ),
               _buildSocialTile(
                 theme,
@@ -525,12 +500,6 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     if (child is PreferredSizeWidget) {
       return (child as PreferredSizeWidget).preferredSize.height;
     }
-    if (child is Showcase) {
-      final showcase = child as Showcase;
-      if (showcase.child is PreferredSizeWidget) {
-        return (showcase.child as PreferredSizeWidget).preferredSize.height;
-      }
-    }
     return 48; // Default fallback
   }
 
@@ -539,8 +508,17 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final theme = Theme.of(context);
     return Container(
-      color: backgroundColor,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withValues(alpha: 0.95),
+        border: Border(
+          bottom: BorderSide(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: shrinkOffset > 0 ? 0.3 : 0.0),
+            width: 1,
+          ),
+        ),
+      ),
       child: child,
     );
   }

@@ -11,7 +11,6 @@ import 'package:upgrader/upgrader.dart';
 import 'edit_note_screen.dart';
 
 import 'package:get/get.dart';
-import 'package:showcaseview/showcaseview.dart';
 import '../models/note.dart';
 import '../controllers/note_controller.dart';
 import '../widgets/shimmer_widgets.dart';
@@ -31,14 +30,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   final RxString _searchQuery = ''.obs;
   String? _profileImageUrl;
 
-  // Showcase Keys
-  final GlobalKey _menuKey = GlobalKey();
-  final GlobalKey _searchKey = GlobalKey();
-  final GlobalKey _filterKey = GlobalKey();
-  final GlobalKey _profileKey = GlobalKey();
-  final GlobalKey _addNoteKey = GlobalKey();
-  final GlobalKey _labelKey = GlobalKey();
-
   @override
   void initState() {
     super.initState();
@@ -46,14 +37,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       if (mounted) setState(() => _profileImageUrl = url);
     });
 
-    _profileService.getProfilePhoto().then((url) {
-      if (mounted) setState(() => _profileImageUrl = url);
-    });
-
-    // Trigger Showcase after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showFeatureDiscovery();
-    });
     _profileService.addListener(_loadProfile);
     _loadProfile();
     
@@ -71,20 +54,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     });
   }
 
-  void _showFeatureDiscovery() async {
-    final isFirstLaunch = !Get.isRegistered<bool>(tag: 'showcase_shown');
-    if (isFirstLaunch) {
-      ShowcaseView.get().startShowCase([
-        _menuKey,
-        _labelKey,
-        _searchKey,
-        _filterKey,
-        _profileKey,
-        _addNoteKey,
-      ]);
-      Get.put(true, tag: 'showcase_shown');
-    }
-  }
+
 
   @override
   void dispose() {
@@ -128,54 +98,42 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     icon: const Icon(Icons.arrow_back),
                     onPressed: () => _noteController.setSelectedLabel(null),
                   )
-                : Showcase(
-                key: _menuKey,
-                description: 'Access your categories and settings here',
-                child: IconButton(
+                : IconButton(
                   icon: const Icon(Icons.menu),
                   onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
-              )),
+                )),
               actions: [
-                Showcase(
-                  key: _filterKey,
-                  description: 'Filter notes by date, images, or signature',
-                  child: IconButton(
-                    icon: const Icon(Icons.tune),
-                    onPressed: () => _showFilterSheet(context),
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.tune),
+                  onPressed: () => _showFilterSheet(context),
                 ),
                 const SizedBox(width: 8),
-                Showcase(
-                  key: _profileKey,
-                  description: 'Profile identity (Non-interactive)',
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: SweepGradient(
-                        colors: [
-                          Colors.blue,
-                          Colors.purple,
-                          Colors.pink,
-                          Colors.orange,
-                          Colors.yellow,
-                          Colors.green,
-                          Colors.blue,
-                        ],
-                      ),
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: SweepGradient(
+                      colors: [
+                        Colors.blue,
+                        Colors.purple,
+                        Colors.pink,
+                        Colors.orange,
+                        Colors.yellow,
+                        Colors.green,
+                        Colors.blue,
+                      ],
                     ),
-                    child: CircleAvatar(
-                      radius: 16,
-                      backgroundImage: _profileImageUrl != null
-                          ? (_profileImageUrl!.startsWith('http')
-                              ? CachedNetworkImageProvider(_profileImageUrl!)
-                              : FileImage(File(_profileImageUrl!)) as ImageProvider)
-                          : null,
-                      child: _profileImageUrl == null
-                          ? const Icon(Icons.person, size: 20)
-                          : null,
-                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 16,
+                    backgroundImage: _profileImageUrl != null
+                        ? (_profileImageUrl!.startsWith('http')
+                            ? CachedNetworkImageProvider(_profileImageUrl!)
+                            : FileImage(File(_profileImageUrl!)) as ImageProvider)
+                        : null,
+                    child: _profileImageUrl == null
+                        ? const Icon(Icons.person, size: 20)
+                        : null,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -203,29 +161,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                       ],
                     ),
-                    child: Showcase(
-                      key: _searchKey,
-                      description: 'Search through your notes instantly',
-                      child: TextField(
-                        decoration: const InputDecoration(
-                          hintText: 'Search notes...',
-                          prefixIcon: Icon(Icons.search, color: Colors.grey),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
-                        onChanged: (value) => _searchQuery.value = value,
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Search notes...',
+                        prefixIcon: Icon(Icons.search, color: Colors.grey),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
+                      onChanged: (value) => _searchQuery.value = value,
                     ),
                   ),
                 ),
               ),
             ),
             SliverToBoxAdapter(
-              child: Showcase(
-                key: _labelKey,
-                description: 'Filter notes by your custom labels',
-                child: _buildLabelSelector(theme),
-              ),
+              child: _buildLabelSelector(theme),
             ),
           ],
           body: Obx(() {
@@ -256,28 +206,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           }),
         ),
       ),
-      floatingActionButton: Showcase(
-        key: _addNoteKey,
-        description: 'Create a new note instantly',
-        child: OpenContainer(
-          transitionDuration: const Duration(milliseconds: 500),
-          openColor: theme.colorScheme.surface,
-          closedElevation: 6,
-          closedColor: theme.colorScheme.primaryContainer,
-          closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          openBuilder: (context, action) => const EditNoteScreen(),
-          closedBuilder: (context, action) => SizedBox(
-            height: 56,
-            width: 140,
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add, color: theme.colorScheme.onPrimaryContainer),
-                  const SizedBox(width: 8),
-                  Text('New Note', style: TextStyle(color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold)),
-                ],
-              ),
+      floatingActionButton: OpenContainer(
+        transitionDuration: const Duration(milliseconds: 500),
+        openColor: theme.colorScheme.surface,
+        closedElevation: 6,
+        closedColor: theme.colorScheme.primaryContainer,
+        closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        openBuilder: (context, action) => const EditNoteScreen(),
+        closedBuilder: (context, action) => SizedBox(
+          height: 56,
+          width: 140,
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.add, color: theme.colorScheme.onPrimaryContainer),
+                const SizedBox(width: 8),
+                Text('New Note', style: TextStyle(color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold)),
+              ],
             ),
           ),
         ),
