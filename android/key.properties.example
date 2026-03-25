@@ -1,0 +1,9 @@
+# Example key.properties file
+# Do NOT commit your real key.properties to version control!
+# Replicate these values in GitHub Secrets (STORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS)
+# And add KEYSTORE_BASE64 (your .jks file converted to base64)
+
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=YOUR_KEY_ALIAS
+storeFile=upload-keystore.jks
