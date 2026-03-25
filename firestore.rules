@@ -4,5 +4,8 @@ service cloud.firestore {
     match /notes/{noteId} {
       allow read, write: if true;
     }
+    match /labels/{labelId} {
+      allow read, write: if true;
+    }
   }
 }

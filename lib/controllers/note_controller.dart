@@ -21,7 +21,7 @@ class NoteController extends GetxController {
   }
 
   void _listenToNotes() {
-    allNotes.bindStream(_firestoreService.getNotes(isDeleted: false));
+    allNotes.bindStream(_firestoreService.getNotes(isArchived: false, isDeleted: false));
   }
 
   void _listenToLabels() {

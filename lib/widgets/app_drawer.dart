@@ -532,7 +532,17 @@ class _AppDrawerState extends State<AppDrawer> {
     );
 
     if (newLabel != null && newLabel.isNotEmpty) {
-      await _noteController.addLabel(newLabel);
+      try {
+        await _noteController.addLabel(newLabel);
+      } catch (e) {
+        Get.snackbar(
+          'Error',
+          'Failed to create label: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withOpacity(0.8),
+          colorText: Colors.white,
+        );
+      }
     }
   }
 }

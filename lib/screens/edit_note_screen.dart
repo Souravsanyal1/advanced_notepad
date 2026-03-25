@@ -149,9 +149,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         isFavorite: _isFavorite,
         isArchived: _isArchived,
         imageUrl: _imageUrl,
-        labels: _selectedLabels,
+        labels: List.from(_selectedLabels),
       );
-      _noteController.addNote(newNote);
+      await _noteController.addNote(newNote);
     } else {
       final updatedNote = widget.note!.copyWith(
         title: _titleController.text,
@@ -162,20 +162,36 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         isFavorite: _isFavorite,
         isArchived: _isArchived,
         imageUrl: _imageUrl,
-        labels: _selectedLabels,
+        labels: List.from(_selectedLabels),
       );
-      _noteController.updateNote(updatedNote);
+      await _noteController.updateNote(updatedNote);
     }
     
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-          _lastSaved = DateFormat('jm').format(now);
-        });
-        Navigator.pop(context);
-      }
-    });
+    if (mounted) {
+      setState(() {
+        _isSaving = false;
+        _lastSaved = DateFormat('jm').format(now);
+      });
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _updateFirestoreIfExisting() async {
+    if (widget.note != null) {
+      final now = DateTime.now();
+      final updatedNote = widget.note!.copyWith(
+        title: _titleController.text,
+        content: _contentController.text,
+        color: _selectedColor,
+        updatedAt: now,
+        isPinned: _isPinned,
+        isFavorite: _isFavorite,
+        isArchived: _isArchived,
+        imageUrl: _imageUrl,
+        labels: List.from(_selectedLabels),
+      );
+      await _noteController.updateNote(updatedNote);
+    }
   }
 
   void _deleteNote() async {
@@ -293,7 +309,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                     _isPinned ? Icons.push_pin : Icons.push_pin_outlined,
                     color: _isPinned ? Colors.blue.shade700 : contrastColor,
                   ),
-                  onPressed: () => setState(() => _isPinned = !_isPinned),
+                  onPressed: () {
+                    setState(() => _isPinned = !_isPinned);
+                    _updateFirestoreIfExisting();
+                  },
                   tooltip: 'Pin note',
                 ),
                 IconButton(
@@ -301,7 +320,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                     _isFavorite ? Icons.favorite : Icons.favorite_border,
                     color: _isFavorite ? Colors.red.shade400 : contrastColor,
                   ),
-                  onPressed: () => setState(() => _isFavorite = !_isFavorite),
+                  onPressed: () {
+                    setState(() => _isFavorite = !_isFavorite);
+                    _updateFirestoreIfExisting();
+                  },
                   tooltip: 'Favorite note',
                 ),
                 IconButton(
@@ -309,7 +331,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                     _isArchived ? Icons.archive : Icons.archive_outlined,
                     color: _isArchived ? Colors.orange.shade700 : contrastColor,
                   ),
-                  onPressed: () => setState(() => _isArchived = !_isArchived),
+                  onPressed: () {
+                    setState(() => _isArchived = !_isArchived);
+                    _updateFirestoreIfExisting();
+                  },
                   tooltip: 'Archive note',
                 ),
                 const SizedBox(width: 8),
@@ -733,6 +758,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                           }
                         });
                         setModalState(() {});
+                        _updateFirestoreIfExisting();
                       },
                       selectedColor: Colors.blue.withOpacity(0.2),
                       checkmarkColor: Colors.blue,
@@ -775,13 +801,24 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     );
 
     if (newLabel != null && newLabel.isNotEmpty) {
-      await _noteController.addLabel(newLabel);
-      setState(() {
-        if (!_selectedLabels.contains(newLabel)) {
-          _selectedLabels.add(newLabel);
-        }
-      });
-      return newLabel;
+      try {
+        await _noteController.addLabel(newLabel);
+        setState(() {
+          if (!_selectedLabels.contains(newLabel)) {
+            _selectedLabels.add(newLabel);
+          }
+        });
+        _updateFirestoreIfExisting();
+        return newLabel;
+      } catch (e) {
+        Get.snackbar(
+          'Error',
+          'Failed to create label: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withOpacity(0.8),
+          colorText: Colors.white,
+        );
+      }
     }
     return null;
   }
