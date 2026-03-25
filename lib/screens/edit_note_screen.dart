@@ -161,6 +161,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         isFavorite: _isFavorite,
         isArchived: _isArchived,
         imageUrl: _imageUrl,
+        signatureUrl: _signatureUrl,
         labels: List.from(_selectedLabels),
       );
       await _noteController.addNote(newNote);
@@ -174,6 +175,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         isFavorite: _isFavorite,
         isArchived: _isArchived,
         imageUrl: _imageUrl,
+        signatureUrl: _signatureUrl,
         labels: List.from(_selectedLabels),
       );
       await _noteController.updateNote(updatedNote);
@@ -200,6 +202,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         isFavorite: _isFavorite,
         isArchived: _isArchived,
         imageUrl: _imageUrl,
+        signatureUrl: _signatureUrl,
         labels: List.from(_selectedLabels),
       );
       await _noteController.updateNote(updatedNote);
