@@ -13,6 +13,7 @@ class Note {
   final String? imageUrl;
   final List<String> labels;
   final bool isDeleted;
+  final String? signatureUrl;
 
   Note({
     required this.id,
@@ -27,6 +28,7 @@ class Note {
     this.imageUrl,
     this.labels = const [],
     this.isDeleted = false,
+    this.signatureUrl,
   });
 
   factory Note.fromFirestore(DocumentSnapshot doc) {
@@ -44,6 +46,7 @@ class Note {
       imageUrl: data['imageUrl'],
       labels: List<String>.from(data['labels'] ?? []),
       isDeleted: data['isDeleted'] ?? false,
+      signatureUrl: data['signatureUrl'],
     );
   }
 
@@ -60,6 +63,7 @@ class Note {
       'imageUrl': imageUrl,
       'labels': labels,
       'isDeleted': isDeleted,
+      'signatureUrl': signatureUrl,
     };
   }
 
@@ -74,6 +78,7 @@ class Note {
     String? imageUrl,
     List<String>? labels,
     bool? isDeleted,
+    String? signatureUrl,
   }) {
     return Note(
       id: id,
@@ -88,6 +93,7 @@ class Note {
       imageUrl: imageUrl ?? this.imageUrl,
       labels: labels ?? this.labels,
       isDeleted: isDeleted ?? this.isDeleted,
+      signatureUrl: signatureUrl ?? this.signatureUrl,
     );
   }
 }

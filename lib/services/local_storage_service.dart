@@ -44,6 +44,30 @@ class LocalStorageService {
     }
   }
 
+  /// Saves raw image bytes to the persistent application document directory.
+  /// Returns the absolute path of the saved file.
+  Future<String?> saveImageFromBytes(Uint8List bytes, String folder) async {
+    try {
+      final Directory appDocDir = await getApplicationDocumentsDirectory();
+      final String directoryPath = path.join(appDocDir.path, folder);
+      
+      final Directory targetDir = Directory(directoryPath);
+      if (!await targetDir.exists()) {
+        await targetDir.create(recursive: true);
+      }
+
+      final String fileName = 'sig_${DateTime.now().millisecondsSinceEpoch}.png';
+      final String filePath = path.join(directoryPath, fileName);
+      
+      final File savedFile = File(filePath);
+      await savedFile.writeAsBytes(bytes);
+      return savedFile.path;
+    } catch (e) {
+      debugPrint('Local Storage Error: $e');
+      return null;
+    }
+  }
+
   /// Checks if a file exists at the given path.
   bool fileExists(String? filePath) {
     if (filePath == null || filePath.isEmpty) return false;

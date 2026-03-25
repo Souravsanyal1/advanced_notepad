@@ -12,6 +12,7 @@ import 'package:get/get.dart';
 import '../controllers/note_controller.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
+import 'package:signature/signature.dart';
 
 class EditNoteScreen extends StatefulWidget {
   final Note? note;
@@ -42,6 +43,8 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   String _lastSaved = '';
   int _wordCount = 0;
   int _charCount = 0;
+  String? _signatureUrl;
+  late SignatureController _sigController;
 
   final List<int> _colors = [
     0xFFFFFFFF, // white
@@ -68,9 +71,16 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       _isArchived = widget.note!.isArchived;
       _isDeleted = widget.note!.isDeleted;
       _imageUrl = widget.note!.imageUrl;
+      _signatureUrl = widget.note!.signatureUrl;
       _selectedLabels = List<String>.from(widget.note!.labels);
       _updateStats();
     }
+
+    _sigController = SignatureController(
+      penStrokeWidth: 3,
+      penColor: Colors.black,
+      exportBackgroundColor: Colors.transparent,
+    );
 
     _contentController.addListener(_updateStats);
   }
@@ -88,6 +98,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     _contentController.removeListener(_updateStats);
     _titleController.dispose();
     _contentController.dispose();
+    _sigController.dispose();
     super.dispose();
   }
 
@@ -438,6 +449,74 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                       ],
                     ),
                   ),
+                if (_signatureUrl != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.draw_rounded, size: 16, color: contrastColor.withOpacity(0.5)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Signature',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: contrastColor.withOpacity(0.5),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Stack(
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: contrastColor.withOpacity(0.03),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: contrastColor.withOpacity(0.08), width: 1.5),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(24),
+                                child: Image.file(
+                                  File(_signatureUrl!),
+                                  fit: BoxFit.contain,
+                                  height: 120,
+                                  color: contrastColor.withOpacity(0.8),
+                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: GestureDetector(
+                                onTap: () async {
+                                  if (_signatureUrl != null) {
+                                    await _storageService.deleteImage(_signatureUrl!);
+                                  }
+                                  setState(() => _signatureUrl = null);
+                                  _updateFirestoreIfExisting();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close_rounded, color: Colors.red, size: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: TextField(
@@ -581,6 +660,12 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                       'Labels',
                       contrastColor,
                       () => _showLabelPicker(contrastColor),
+                    ),
+                    _buildToolbarAction(
+                      Icons.draw_rounded,
+                      'Signature',
+                      contrastColor,
+                      () => _showSignatureDialog(contrastColor),
                     ),
                     if (widget.note != null)
                       _buildToolbarAction(
@@ -861,6 +946,141 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
           ),
         ],
       ),
+    );
+  }
+  void _showSignatureDialog(Color contrastColor) {
+    HapticFeedback.mediumImpact();
+    // Re-initialize controller with correct color to avoid final field error
+    _sigController = SignatureController(
+      penStrokeWidth: 3,
+      penColor: contrastColor.withOpacity(0.8),
+      exportBackgroundColor: Colors.transparent,
+    );
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: AlertDialog(
+          backgroundColor: Color(_selectedColor).withOpacity(0.95),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+            side: BorderSide(color: contrastColor.withOpacity(0.1), width: 1.5),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.draw_rounded, color: contrastColor),
+              const SizedBox(width: 12),
+              Text(
+                'Add Signature', 
+                style: GoogleFonts.poppins(
+                  color: contrastColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 250,
+                width: double.maxFinite,
+                decoration: BoxDecoration(
+                  color: contrastColor.withOpacity(0.05),
+                  border: Border.all(color: contrastColor.withOpacity(0.2)),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Signature(
+                    controller: _sigController,
+                    backgroundColor: Colors.transparent,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildSigAction(Icons.undo, 'Undo', contrastColor, () => _sigController.undo()),
+                  const SizedBox(width: 24),
+                  _buildSigAction(Icons.clear, 'Clear', contrastColor, () => _sigController.clear()),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _sigController.clear();
+                Navigator.pop(context);
+              },
+              child: Text(
+                'Cancel', 
+                style: GoogleFonts.poppins(
+                  color: contrastColor.withOpacity(0.6),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (_sigController.isNotEmpty) {
+                  final Uint8List? data = await _sigController.toPngBytes();
+                  if (data != null) {
+                    final path = await _storageService.saveImageFromBytes(data, 'signatures');
+                    setState(() {
+                      _signatureUrl = path;
+                    });
+                    _updateFirestoreIfExisting();
+                  }
+                }
+                Navigator.pop(context);
+                _sigController.clear();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: contrastColor,
+                foregroundColor: Color(_selectedColor),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: Text(
+                'Save Signature',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSigAction(IconData icon, String label, Color color, VoidCallback onTap) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(icon, color: color),
+          onPressed: onTap,
+          style: IconButton.styleFrom(
+            backgroundColor: color.withOpacity(0.1),
+            padding: const EdgeInsets.all(12),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            color: color.withOpacity(0.6),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

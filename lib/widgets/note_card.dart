@@ -73,6 +73,27 @@ class NoteCard extends StatelessWidget {
                               )),
                   ),
                 ),
+              if (note.signatureUrl != null && note.imageUrl == null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Container(
+                    height: 60,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: contrastColor.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        File(note.signatureUrl!),
+                        color: contrastColor.withValues(alpha: 0.7),
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.draw_outlined, size: 20),
+                      ),
+                    ),
+                  ),
+                ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

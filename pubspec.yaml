@@ -52,6 +52,7 @@ dependencies:
   url_launcher: ^6.3.2
   rxdart: ^0.28.0
   get: ^4.7.3
+  signature: ^6.3.0
 
 dev_dependencies:
   flutter_test:
