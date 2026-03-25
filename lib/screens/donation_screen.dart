@@ -42,55 +42,58 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    const String cryptoAddress = '0x48de9a54c2a69aac138dce2afc2da0e7c9437ec9'; 
+    const String cryptoAddress = '0x48de9a54c2a69aac138dce2afc2da0e7c9437ec9';
     const String binanceId = '549323070';
+
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     final List<Map<String, dynamic>> networks = [
       {
-        'name': 'BSC', 
-        'symbol': 'BNB', 
+        'name': 'BSC',
+        'symbol': 'BNB',
         'color': const Color(0xFFF3BA2F),
         'logo': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=040'
       },
       {
-        'name': 'Optimism', 
-        'symbol': 'OP', 
+        'name': 'Optimism',
+        'symbol': 'OP',
         'color': const Color(0xFFFF0420),
         'logo': 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.png?v=040'
       },
       {
-        'name': 'Ethereum', 
-        'symbol': 'ETH', 
+        'name': 'Ethereum',
+        'symbol': 'ETH',
         'color': const Color(0xFF627EEA),
         'logo': 'https://cryptologos.cc/logos/ethereum-eth-logo.png?v=040'
       },
       {
-        'name': 'Aptos', 
-        'symbol': 'APT', 
+        'name': 'Aptos',
+        'symbol': 'APT',
         'color': const Color(0xFF2DD4BF),
         'logo': 'https://cryptologos.cc/logos/aptos-apt-logo.png?v=040'
       },
       {
-        'name': 'Polygon', 
-        'symbol': 'POL', 
+        'name': 'Polygon',
+        'symbol': 'POL',
         'color': const Color(0xFF8247E5),
         'logo': 'https://cryptologos.cc/logos/polygon-matic-logo.png?v=040'
       },
       {
-        'name': 'Solana', 
-        'symbol': 'SOL', 
+        'name': 'Solana',
+        'symbol': 'SOL',
         'color': const Color(0xFF14F195),
         'logo': 'https://cryptologos.cc/logos/solana-sol-logo.png?v=040'
       },
       {
-        'name': 'opBNB', 
-        'symbol': 'BNB', 
+        'name': 'opBNB',
+        'symbol': 'BNB',
         'color': const Color(0xFFF3BA2F),
         'logo': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=040'
       },
       {
-        'name': 'Arbitrum', 
-        'symbol': 'ARB', 
+        'name': 'Arbitrum',
+        'symbol': 'ARB',
         'color': const Color(0xFF28A0F0),
         'logo': 'https://cryptologos.cc/logos/arbitrum-arb-logo.png?v=040'
       },
@@ -102,13 +105,13 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios_new, color: isDarkMode ? Colors.white : Colors.black),
           onPressed: () => Get.back(),
         ),
         title: Text(
           'Support Us',
           style: GoogleFonts.outfit(
-            color: Colors.white,
+            color: isDarkMode ? Colors.white : Colors.black,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -116,15 +119,21 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0F0C29),
-              Color(0xFF302B63),
-              Color(0xFF24243E),
-            ],
+            colors: isDarkMode
+                ? [
+                    const Color(0xFF0F0C29),
+                    const Color(0xFF302B63),
+                    const Color(0xFF24243E),
+                  ]
+                : [
+                    const Color(0xFFF3E5F5),
+                    const Color(0xFFE1BEE7),
+                    const Color(0xFFD1C4E9),
+                  ],
           ),
         ),
         child: SafeArea(
@@ -144,10 +153,10 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.15),
+                          color: (isDarkMode ? Colors.white : Colors.deepPurple).withValues(alpha: 0.1),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.red.withValues(alpha: 0.2),
+                              color: Colors.red.withValues(alpha: isDarkMode ? 0.2 : 0.15),
                               blurRadius: _glowAnimation.value,
                               spreadRadius: _glowAnimation.value / 2,
                             ),
@@ -169,7 +178,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                   style: GoogleFonts.outfit(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: isDarkMode ? Colors.white : Colors.black,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -178,20 +187,23 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 16,
-                    color: Colors.white70,
+                    color: isDarkMode ? Colors.white70 : Colors.black87,
                     height: 1.5,
                   ),
                 ),
                 const SizedBox(height: 40),
-                
+
                 // Networks Grid
                 Wrap(
                   spacing: 20,
                   runSpacing: 24,
                   alignment: WrapAlignment.center,
-                  children: networks.map((net) => _buildTokenIcon(net['name'], net['symbol'], net['color'], net['logo'])).toList(),
+                  children: networks
+                      .map((net) => _buildTokenIcon(
+                          net['name'], net['symbol'], net['color'], net['logo'], isDarkMode))
+                      .toList(),
                 ),
-                
+
                 const SizedBox(height: 40),
 
                 // Wallet Address Card (Glassmorphism)
@@ -202,10 +214,10 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                     child: Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
+                        color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: isDarkMode ? 0.05 : 0.02),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: isDarkMode ? 0.1 : 0.05),
                           width: 1.5,
                         ),
                       ),
@@ -214,14 +226,15 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.account_balance_wallet_rounded, color: Colors.blueAccent, size: 24),
+                              Icon(Icons.account_balance_wallet_rounded,
+                                  color: isDarkMode ? Colors.blueAccent : Colors.blue, size: 24),
                               const SizedBox(width: 12),
                               Text(
                                 'Wallet Address',
                                 style: GoogleFonts.outfit(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                                  color: isDarkMode ? Colors.white : Colors.black,
                                 ),
                               ),
                             ],
@@ -230,7 +243,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.3),
+                              color: (isDarkMode ? Colors.black : Colors.white).withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -240,7 +253,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                                     cryptoAddress,
                                     style: GoogleFonts.outfit(
                                       fontSize: 13,
-                                      color: Colors.white,
+                                      color: isDarkMode ? Colors.white : Colors.black,
                                       letterSpacing: 0.5,
                                     ),
                                     maxLines: 1,
@@ -248,7 +261,8 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.copy_rounded, color: Colors.white70, size: 20),
+                                  icon: Icon(Icons.copy_rounded,
+                                      color: isDarkMode ? Colors.white70 : Colors.black54, size: 20),
                                   onPressed: () {
                                     Clipboard.setData(const ClipboardData(text: cryptoAddress));
                                     HapticFeedback.lightImpact();
@@ -256,8 +270,8 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                                       'Copied!',
                                       'Wallet Address copied to clipboard',
                                       snackPosition: SnackPosition.BOTTOM,
-                                      backgroundColor: Colors.white.withValues(alpha: 0.1),
-                                      colorText: Colors.white,
+                                      backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
+                                      colorText: colorScheme.onSurface,
                                       margin: const EdgeInsets.all(16),
                                     );
                                   },
@@ -266,17 +280,18 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                             ),
                           ),
                           const SizedBox(height: 24),
-                          
+
                           Row(
                             children: [
-                              const Icon(Icons.qr_code_2_rounded, color: Colors.orangeAccent, size: 24),
+                              Icon(Icons.qr_code_2_rounded,
+                                  color: isDarkMode ? Colors.orangeAccent : Colors.orange, size: 24),
                               const SizedBox(width: 12),
                               Text(
                                 'Binance ID',
                                 style: GoogleFonts.outfit(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                                  color: isDarkMode ? Colors.white : Colors.black,
                                 ),
                               ),
                             ],
@@ -285,7 +300,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.3),
+                              color: (isDarkMode ? Colors.black : Colors.white).withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -296,13 +311,14 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                                     style: GoogleFonts.outfit(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                                      color: isDarkMode ? Colors.white : Colors.black,
                                       letterSpacing: 2,
                                     ),
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.copy_rounded, color: Colors.white70, size: 20),
+                                  icon: Icon(Icons.copy_rounded,
+                                      color: isDarkMode ? Colors.white70 : Colors.black54, size: 20),
                                   onPressed: () {
                                     Clipboard.setData(const ClipboardData(text: binanceId));
                                     HapticFeedback.lightImpact();
@@ -310,8 +326,8 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                                       'Copied!',
                                       'Binance ID copied to clipboard',
                                       snackPosition: SnackPosition.BOTTOM,
-                                      backgroundColor: Colors.white.withValues(alpha: 0.1),
-                                      colorText: Colors.white,
+                                      backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
+                                      colorText: colorScheme.onSurface,
                                       margin: const EdgeInsets.all(16),
                                     );
                                   },
@@ -325,9 +341,8 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                   ),
                 ),
 
-
                 const SizedBox(height: 40),
-                
+
                 // Why Support Us Section
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,7 +352,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                       style: GoogleFonts.outfit(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDarkMode ? Colors.white : Colors.black,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -345,16 +360,19 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                       Icons.update_rounded,
                       'Regular Updates',
                       'We constantly improve features and fix bugs.',
+                      isDarkMode,
                     ),
                     _buildSupportPoint(
                       Icons.security_rounded,
                       'Privacy Focused',
                       'No ads, no trackers, just your notes.',
+                      isDarkMode,
                     ),
                     _buildSupportPoint(
                       Icons.code_rounded,
                       'Open Source Support',
                       'Help maintain the server and infrastructure.',
+                      isDarkMode,
                     ),
                   ],
                 ),
@@ -364,7 +382,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                   style: GoogleFonts.outfit(
                     fontSize: 14,
                     fontStyle: FontStyle.italic,
-                    color: Colors.white38,
+                    color: isDarkMode ? Colors.white38 : Colors.black38,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -376,7 +394,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildTokenIcon(String name, String symbol, Color color, String logoUrl) {
+  Widget _buildTokenIcon(String name, String symbol, Color color, String logoUrl, bool isDarkMode) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -430,7 +448,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
           name,
           style: GoogleFonts.outfit(
             fontSize: 12,
-            color: Colors.white,
+            color: isDarkMode ? Colors.white : Colors.black,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -438,7 +456,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
           '($symbol)',
           style: GoogleFonts.outfit(
             fontSize: 10,
-            color: Colors.white38,
+            color: isDarkMode ? Colors.white38 : Colors.black38,
             fontWeight: FontWeight.w400,
           ),
         ),
@@ -446,7 +464,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildSupportPoint(IconData icon, String title, String desc) {
+  Widget _buildSupportPoint(IconData icon, String title, String desc, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
       child: Row(
@@ -455,7 +473,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: Colors.blueAccent, size: 24),
@@ -470,7 +488,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                   style: GoogleFonts.outfit(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: isDarkMode ? Colors.white : Colors.black,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -478,7 +496,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                   desc,
                   style: GoogleFonts.outfit(
                     fontSize: 14,
-                    color: Colors.white60,
+                    color: isDarkMode ? Colors.white60 : Colors.black54,
                   ),
                 ),
               ],
