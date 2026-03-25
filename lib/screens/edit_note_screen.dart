@@ -298,8 +298,8 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         elevation: 0,
         centerTitle: true,
         title: _isSaving 
-          ? Text('Saving...', style: TextStyle(color: contrastColor.withOpacity(0.6), fontSize: 14))
-          : (_lastSaved.isNotEmpty ? Text('Saved at $_lastSaved', style: TextStyle(color: contrastColor.withOpacity(0.6), fontSize: 14)) : null),
+          ? Text('Saving...', style: TextStyle(color: contrastColor.withValues(alpha: 0.6), fontSize: 14))
+          : (_lastSaved.isNotEmpty ? Text('Saved at $_lastSaved', style: TextStyle(color: contrastColor.withValues(alpha: 0.6), fontSize: 14)) : null),
         leading: IconButton(
           icon: Icon(Icons.close, color: contrastColor),
           onPressed: () => Navigator.pop(context),
@@ -460,14 +460,14 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.draw_rounded, size: 16, color: contrastColor.withOpacity(0.5)),
+                            Icon(Icons.draw_rounded, size: 16, color: contrastColor.withValues(alpha: 0.5)),
                             const SizedBox(width: 8),
                             Text(
                               'Signature',
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: contrastColor.withOpacity(0.5),
+                                color: contrastColor.withValues(alpha: 0.5),
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -479,9 +479,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                             Container(
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: contrastColor.withOpacity(0.03),
+                                color: contrastColor.withValues(alpha: 0.03),
                                 borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: contrastColor.withOpacity(0.08), width: 1.5),
+                                border: Border.all(color: contrastColor.withValues(alpha: 0.08), width: 1.5),
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(24),
@@ -489,7 +489,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                                   File(_signatureUrl!),
                                   fit: BoxFit.contain,
                                   height: 120,
-                                  color: contrastColor.withOpacity(0.8),
+                                  color: contrastColor.withValues(alpha: 0.8),
                                   errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
                                 ),
                               ),
@@ -508,7 +508,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: Colors.red.withOpacity(0.1),
+                                    color: Colors.red.withValues(alpha: 0.1),
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(Icons.close_rounded, color: Colors.red, size: 16),
@@ -553,9 +553,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -595,10 +595,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
             decoration: BoxDecoration(
-              color: contrastColor.withOpacity(0.08),
+              color: contrastColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: contrastColor.withOpacity(0.1),
+                color: contrastColor.withValues(alpha: 0.1),
                 width: 1.5,
               ),
             ),
@@ -614,7 +614,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                         '$_wordCount words | $_charCount chars',
                         style: TextStyle(
                           fontSize: 12,
-                          color: contrastColor.withOpacity(0.6),
+                          color: contrastColor.withValues(alpha: 0.6),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -623,7 +623,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: contrastColor.withOpacity(0.1),
+                            color: contrastColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
@@ -634,7 +634,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                                 decoration: BoxDecoration(
                                   color: Color(_selectedColor),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: contrastColor.withOpacity(0.2)),
+                                  border: Border.all(color: contrastColor.withValues(alpha: 0.2)),
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -674,7 +674,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                       _buildToolbarAction(
                         Icons.delete_outline_rounded,
                         'Delete',
-                        Colors.red.withOpacity(0.8),
+                        Colors.red.withValues(alpha: 0.8),
                         _deleteNote,
                       ),
                   ],
@@ -699,7 +699,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
             label,
             style: TextStyle(
               fontSize: 10,
-              color: color.withOpacity(0.7),
+              color: color.withValues(alpha: 0.7),
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -755,7 +755,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                         boxShadow: [
                           if (isSelected)
                             BoxShadow(
-                              color: Colors.blue.withOpacity(0.2),
+                              color: Colors.blue.withValues(alpha: 0.2),
                               blurRadius: 10,
                               spreadRadius: 2,
                             )
@@ -911,7 +911,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
           'Error',
           'Failed to create label: $e',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withOpacity(0.8),
+          backgroundColor: Colors.red.withValues(alpha: 0.8),
           colorText: Colors.white,
         );
       }
@@ -956,7 +956,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     // Re-initialize controller with correct color to avoid final field error
     _sigController = SignatureController(
       penStrokeWidth: 3,
-      penColor: contrastColor.withOpacity(0.8),
+      penColor: contrastColor.withValues(alpha: 0.8),
       exportBackgroundColor: Colors.transparent,
     );
     
@@ -966,10 +966,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       builder: (context) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: AlertDialog(
-          backgroundColor: Color(_selectedColor).withOpacity(0.95),
+          backgroundColor: Color(_selectedColor).withValues(alpha: 0.95),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
-            side: BorderSide(color: contrastColor.withOpacity(0.1), width: 1.5),
+            side: BorderSide(color: contrastColor.withValues(alpha: 0.1), width: 1.5),
           ),
           title: Row(
             children: [
@@ -992,8 +992,8 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                 height: 250,
                 width: double.maxFinite,
                 decoration: BoxDecoration(
-                  color: contrastColor.withOpacity(0.05),
-                  border: Border.all(color: contrastColor.withOpacity(0.2)),
+                  color: contrastColor.withValues(alpha: 0.05),
+                  border: Border.all(color: contrastColor.withValues(alpha: 0.2)),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: ClipRRect(
@@ -1024,7 +1024,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
               child: Text(
                 'Cancel', 
                 style: GoogleFonts.poppins(
-                  color: contrastColor.withOpacity(0.6),
+                  color: contrastColor.withValues(alpha: 0.6),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1035,13 +1035,15 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                   final Uint8List? data = await _sigController.toPngBytes();
                   if (data != null) {
                     final path = await _storageService.saveImageFromBytes(data, 'signatures');
-                    setState(() {
-                      _signatureUrl = path;
-                    });
+                    if (mounted) {
+                      setState(() {
+                        _signatureUrl = path;
+                      });
+                    }
                     _updateFirestoreIfExisting();
                   }
                 }
-                Navigator.pop(context);
+                if (mounted) Get.back();
                 _sigController.clear();
               },
               style: ElevatedButton.styleFrom(
@@ -1070,7 +1072,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
           icon: Icon(icon, color: color),
           onPressed: onTap,
           style: IconButton.styleFrom(
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withValues(alpha: 0.1),
             padding: const EdgeInsets.all(12),
           ),
         ),
@@ -1079,7 +1081,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
           label,
           style: GoogleFonts.poppins(
             fontSize: 10,
-            color: color.withOpacity(0.6),
+            color: color.withValues(alpha: 0.6),
             fontWeight: FontWeight.w500,
           ),
         ),

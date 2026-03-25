@@ -4,12 +4,56 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:ui';
 
-class DonationScreen extends StatelessWidget {
+class DonationScreen extends StatefulWidget {
   const DonationScreen({super.key});
 
   @override
+  State<DonationScreen> createState() => _DonationScreenState();
+}
+
+class _DonationScreenState extends State<DonationScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _glowAnimation = Tween<double>(begin: 10, end: 40).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    const String upiId = 'sourav@upi';
+    const String cryptoAddress = '0x48de9a54c2a69aac138dce2afc2da0e7c9437ec9'; 
+    const String binanceId = '549323070';
+
+    final List<Map<String, dynamic>> networks = [
+      {'name': 'BSC', 'symbol': 'BNB', 'color': const Color(0xFFF3BA2F)},
+      {'name': 'Optimism', 'symbol': 'OP', 'color': const Color(0xFFFF0420)},
+      {'name': 'Ethereum', 'symbol': 'ETH', 'color': const Color(0xFF627EEA)},
+      {'name': 'Aptos', 'symbol': 'APT', 'color': const Color(0xFF2DD4BF)},
+      {'name': 'Polygon', 'symbol': 'POL', 'color': const Color(0xFF8247E5)},
+      {'name': 'Solana', 'symbol': 'SOL', 'color': const Color(0xFF14F195)},
+      {'name': 'opBNB', 'symbol': 'BNB', 'color': const Color(0xFFF3BA2F)},
+      {'name': 'Arbitrum', 'symbol': 'ARB', 'color': const Color(0xFF28A0F0)},
+    ];
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -48,15 +92,13 @@ class DonationScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 20),
-                // Animated Heart Icon
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.8, end: 1.0),
-                  duration: const Duration(seconds: 2),
-                  curve: Curves.elasticOut,
-                  builder: (context, value, child) {
+                const SizedBox(height: 10),
+                // Animated Heart Icon (Pulsing)
+                AnimatedBuilder(
+                  animation: _pulseController,
+                  builder: (context, child) {
                     return Transform.scale(
-                      scale: value,
+                      scale: _scaleAnimation.value,
                       child: Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -65,14 +107,14 @@ class DonationScreen extends StatelessWidget {
                           boxShadow: [
                             BoxShadow(
                               color: Colors.red.withValues(alpha: 0.2),
-                              blurRadius: 30,
-                              spreadRadius: 10,
+                              blurRadius: _glowAnimation.value,
+                              spreadRadius: _glowAnimation.value / 2,
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.favorite_rounded,
-                          color: Colors.redAccent,
+                          color: Colors.redAccent.withValues(alpha: 0.8 + (0.2 * _pulseController.value)),
                           size: 80,
                         ),
                       ),
@@ -91,7 +133,7 @@ class DonationScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Your support helps us keep the project alive and free for everyone. Every contribution counts!',
+                  'Your support helps us maintain and improve the app. We accept donations via multiple crypto networks.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 16,
@@ -101,7 +143,17 @@ class DonationScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 40),
                 
-                // Donation Card (Glassmorphism)
+                // Networks Grid
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 20,
+                  alignment: WrapAlignment.center,
+                  children: networks.map((net) => _buildTokenIcon(net['name'], net['symbol'], net['color'])).toList(),
+                ),
+                
+                const SizedBox(height: 40),
+
+                // Wallet Address Card (Glassmorphism)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(24),
                   child: BackdropFilter(
@@ -117,16 +169,23 @@ class DonationScreen extends StatelessWidget {
                         ),
                       ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Donate via UPI',
-                            style: GoogleFonts.outfit(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+                          Row(
+                            children: [
+                              const Icon(Icons.account_balance_wallet_rounded, color: Colors.blueAccent, size: 24),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Wallet Address',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 16),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
@@ -135,67 +194,88 @@ class DonationScreen extends StatelessWidget {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.payment, color: Colors.blueAccent, size: 24),
-                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    upiId,
+                                    cryptoAddress,
                                     style: GoogleFonts.outfit(
-                                      fontSize: 16,
+                                      fontSize: 13,
                                       color: Colors.white,
-                                      letterSpacing: 1.2,
+                                      letterSpacing: 0.5,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.copy_rounded, color: Colors.white70),
+                                  icon: const Icon(Icons.copy_rounded, color: Colors.white70, size: 20),
                                   onPressed: () {
-                                    Clipboard.setData(const ClipboardData(text: upiId));
+                                    Clipboard.setData(const ClipboardData(text: cryptoAddress));
                                     HapticFeedback.lightImpact();
                                     Get.snackbar(
                                       'Copied!',
-                                      'Payment ID copied to clipboard',
+                                      'Wallet Address copied to clipboard',
                                       snackPosition: SnackPosition.BOTTOM,
                                       backgroundColor: Colors.white.withValues(alpha: 0.1),
                                       colorText: Colors.white,
                                       margin: const EdgeInsets.all(16),
-                                      duration: const Duration(seconds: 2),
                                     );
                                   },
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 30),
-                          // Placeholder for QR Code or Button
-                          ElevatedButton(
-                            onPressed: () {
-                              HapticFeedback.mediumImpact();
-                              // Add actual payment integration later if needed
-                              Get.snackbar(
-                                'Coming Soon',
-                                'Direct payment integration is being processed.',
-                                snackPosition: SnackPosition.BOTTOM,
-                                backgroundColor: Colors.white.withValues(alpha: 0.1),
-                                colorText: Colors.white,
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blueAccent,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                          const SizedBox(height: 24),
+                          
+                          Row(
+                            children: [
+                              const Icon(Icons.qr_code_2_rounded, color: Colors.orangeAccent, size: 24),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Binance ID',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
                               ),
-                              elevation: 10,
-                              shadowColor: Colors.blueAccent.withValues(alpha: 0.5),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Text(
-                              'Donate with App',
-                              style: GoogleFonts.outfit(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    binanceId,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 2,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.copy_rounded, color: Colors.white70, size: 20),
+                                  onPressed: () {
+                                    Clipboard.setData(const ClipboardData(text: binanceId));
+                                    HapticFeedback.lightImpact();
+                                    Get.snackbar(
+                                      'Copied!',
+                                      'Binance ID copied to clipboard',
+                                      snackPosition: SnackPosition.BOTTOM,
+                                      backgroundColor: Colors.white.withValues(alpha: 0.1),
+                                      colorText: Colors.white,
+                                      margin: const EdgeInsets.all(16),
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -203,6 +283,7 @@ class DonationScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 40),
                 
                 // Why Support Us Section
@@ -250,6 +331,52 @@ class DonationScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTokenIcon(String name, String symbol, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: color.withValues(alpha: 0.4),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.1),
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              symbol,
+              style: GoogleFonts.outfit(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          name,
+          style: GoogleFonts.outfit(
+            fontSize: 12,
+            color: Colors.white70,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 
