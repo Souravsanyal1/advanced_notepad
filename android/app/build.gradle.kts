@@ -43,15 +43,20 @@ android {
             val keystorePropertiesFile = rootProject.file("key.properties")
             val keystoreProperties = Properties()
             if (keystorePropertiesFile.exists()) {
-                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+                FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
                 
-                keyAlias = keystoreProperties["keyAlias"] as String?
-                keyPassword = keystoreProperties["keyPassword"] as String?
-                storePassword = keystoreProperties["storePassword"] as String?
-                val storeFileName = keystoreProperties["storeFile"] as String?
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storePassword = keystoreProperties.getProperty("storePassword")
+                val storeFileName = keystoreProperties.getProperty("storeFile")
                 if (storeFileName != null) {
                     storeFile = file(storeFileName)
+                    println("Keystore path: " + storeFile?.absolutePath)
+                } else {
+                    println("Warning: storeFile property missing in key.properties")
                 }
+            } else {
+                println("Warning: key.properties file not found in " + keystorePropertiesFile.absolutePath)
             }
         }
     }
