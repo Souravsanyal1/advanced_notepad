@@ -28,7 +28,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   final ProfileService _profileService = ProfileService();
   final RxString _searchQuery = ''.obs;
   String? _profileImageUrl;
-  late AnimationController _rotationController;
 
   // Showcase Keys
   final GlobalKey _menuKey = GlobalKey();
@@ -45,10 +44,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       if (mounted) setState(() => _profileImageUrl = url);
     });
 
-    _rotationController = AnimationController(
-      duration: const Duration(seconds: 10),
-      vsync: this,
-    )..repeat();
+    _profileService.getProfilePhoto().then((url) {
+      if (mounted) setState(() => _profileImageUrl = url);
+    });
 
     // Trigger Showcase after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -83,7 +81,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   void dispose() {
-    _rotationController.dispose();
     _profileService.removeListener(_loadProfile);
     super.dispose();
   }
@@ -143,35 +140,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 Showcase(
                   key: _profileKey,
                   description: 'Profile identity (Non-interactive)',
-                  child: RotationTransition(
-                    turns: _rotationController,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: SweepGradient(
-                          colors: [
-                            Colors.blue,
-                            Colors.purple,
-                            Colors.pink,
-                            Colors.orange,
-                            Colors.yellow,
-                            Colors.green,
-                            Colors.blue,
-                          ],
-                        ),
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: SweepGradient(
+                        colors: [
+                          Colors.blue,
+                          Colors.purple,
+                          Colors.pink,
+                          Colors.orange,
+                          Colors.yellow,
+                          Colors.green,
+                          Colors.blue,
+                        ],
                       ),
-                      child: CircleAvatar(
-                        radius: 16,
-                        backgroundImage: _profileImageUrl != null
-                            ? (_profileImageUrl!.startsWith('http')
-                                ? CachedNetworkImageProvider(_profileImageUrl!)
-                                : FileImage(File(_profileImageUrl!)) as ImageProvider)
-                            : null,
-                        child: _profileImageUrl == null
-                            ? const Icon(Icons.person, size: 20)
-                            : null,
-                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 16,
+                      backgroundImage: _profileImageUrl != null
+                          ? (_profileImageUrl!.startsWith('http')
+                              ? CachedNetworkImageProvider(_profileImageUrl!)
+                              : FileImage(File(_profileImageUrl!)) as ImageProvider)
+                          : null,
+                      child: _profileImageUrl == null
+                          ? const Icon(Icons.person, size: 20)
+                          : null,
                     ),
                   ),
                 ),
