@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/archive_screen.dart';
 import 'screens/trash_screen.dart';
@@ -12,16 +10,34 @@ import 'screens/donation_screen.dart';
 
 import 'theme/app_theme.dart';
 import 'services/theme_service.dart';
-
 import 'package:get/get.dart';
+import 'services/local_database_service.dart';
 import 'controllers/note_controller.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Initialize Local Database (Hive)
+  final localDb = LocalDatabaseService();
+  await localDb.init();
+  Get.put(localDb);
+
   // Initialize Services & Controllers
   Get.put(ThemeService());
+  
+  // Initialize Notifications
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+  Get.put(notificationService);
+
   Get.put(NoteController());
   
   runApp(const MyApp());

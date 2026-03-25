@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../models/note.dart';
+import '../services/local_database_service.dart';
 import '../services/firestore_service.dart';
 
 enum NoteFilter {
@@ -12,6 +13,7 @@ enum NoteFilter {
 }
 
 class NoteController extends GetxController {
+  final LocalDatabaseService _dbService = Get.find<LocalDatabaseService>();
   final FirestoreService _firestoreService = FirestoreService();
 
   final RxList<Note> allNotes = <Note>[].obs;
@@ -32,17 +34,17 @@ class NoteController extends GetxController {
   }
 
   void _listenToNotes() {
-    allNotes.bindStream(_firestoreService.getNotes(isArchived: false, isDeleted: false));
+    allNotes.bindStream(_dbService.getNotes(isArchived: false, isDeleted: false));
   }
 
   void _listenToLabels() {
-    labels.bindStream(_firestoreService.getLabels());
+    labels.bindStream(_dbService.getLabels());
   }
 
   void _listenToSpecialLists() {
-    favoriteNotes.bindStream(_firestoreService.getNotes(isFavorite: true, isDeleted: false));
-    archivedNotes.bindStream(_firestoreService.getNotes(isArchived: true, isDeleted: false));
-    trashNotes.bindStream(_firestoreService.getNotes(isDeleted: true));
+    favoriteNotes.bindStream(_dbService.getNotes(isFavorite: true, isDeleted: false));
+    archivedNotes.bindStream(_dbService.getNotes(isArchived: true, isDeleted: false));
+    trashNotes.bindStream(_dbService.getNotes(isDeleted: true));
   }
 
   List<Note> get filteredNotes => _applyFilter(allNotes.where((note) {
@@ -103,38 +105,72 @@ class NoteController extends GetxController {
   }
 
   // CRUD Operations
-  Future<void> addNote(Note note) => _firestoreService.addNote(note);
-  Future<void> updateNote(Note note) => _firestoreService.updateNote(note);
-  Future<void> deleteNote(String id) => _firestoreService.moveToTrash(id);
-  Future<void> restoreNote(String id) => _firestoreService.restoreFromTrash(id);
-  Future<void> deleteNotePermanently(String id) => _firestoreService.deleteNote(id);
-  Future<void> addLabel(String name) => _firestoreService.addLabel(name);
-  Future<void> deleteLabel(String name) => _firestoreService.deleteLabel(name);
+  Future<void> addNote(Note note) async {
+    await _dbService.addNote(note);
+    _firestoreService.syncNote(note); // Background sync
+  }
+
+  Future<void> updateNote(Note note) async {
+    await _dbService.updateNote(note);
+    _firestoreService.syncNote(note); // Background sync
+  }
+
+  Future<void> deleteNote(String id) async {
+    await _dbService.moveToTrash(id);
+    // Ideally update isDeleted in Firestore
+    final note = allNotes.firstWhereOrNull((n) => n.id == id) ?? 
+                 favoriteNotes.firstWhereOrNull((n) => n.id == id) ??
+                 archivedNotes.firstWhereOrNull((n) => n.id == id);
+    if (note != null) {
+      _firestoreService.syncNote(note.copyWith(isDeleted: true));
+    }
+  }
+
+  Future<void> restoreNote(String id) async {
+    await _dbService.restoreFromTrash(id);
+    final note = trashNotes.firstWhereOrNull((n) => n.id == id);
+    if (note != null) {
+      _firestoreService.syncNote(note.copyWith(isDeleted: false));
+    }
+  }
+
+  Future<void> deleteNotePermanently(String id) async {
+    await _dbService.deleteNote(id);
+    _firestoreService.deleteNote(id); // Persistent deletion from cloud
+  }
+
+  Future<void> addLabel(String name) => _dbService.addLabel(name);
+  Future<void> deleteLabel(String name) => _dbService.deleteLabel(name);
 
   Future<void> togglePin(Note note) async {
     final updatedNote = note.copyWith(isPinned: !note.isPinned);
-    await _firestoreService.updateNote(updatedNote);
+    await _dbService.updateNote(updatedNote);
+    _firestoreService.syncNote(updatedNote);
   }
 
   Future<void> toggleFavorite(Note note) async {
     final updatedNote = note.copyWith(isFavorite: !note.isFavorite);
-    await _firestoreService.updateNote(updatedNote);
+    await _dbService.updateNote(updatedNote);
+    _firestoreService.syncNote(updatedNote);
   }
 
   Future<void> toggleArchive(Note note) async {
     final updatedNote = note.copyWith(isArchived: !note.isArchived);
-    await _firestoreService.updateNote(updatedNote);
+    await _dbService.updateNote(updatedNote);
+    _firestoreService.syncNote(updatedNote);
   }
 
   Future<void> moveToTrash(Note note) async {
-    await _firestoreService.moveToTrash(note.id);
+    await _dbService.moveToTrash(note.id);
+    _firestoreService.syncNote(note.copyWith(isDeleted: true));
   }
 
   Future<void> addLabelToNote(Note note, String label) async {
     if (!note.labels.contains(label)) {
       final updatedLabels = List<String>.from(note.labels)..add(label);
       final updatedNote = note.copyWith(labels: updatedLabels);
-      await _firestoreService.updateNote(updatedNote);
+      await _dbService.updateNote(updatedNote);
+      _firestoreService.syncNote(updatedNote);
     }
   }
 
@@ -142,15 +178,15 @@ class NoteController extends GetxController {
     if (note.labels.contains(label)) {
       final updatedLabels = List<String>.from(note.labels)..remove(label);
       final updatedNote = note.copyWith(labels: updatedLabels);
-      await _firestoreService.updateNote(updatedNote);
+      await _dbService.updateNote(updatedNote);
+      _firestoreService.syncNote(updatedNote);
     }
   }
 
   // Archive Operations
-  // Note: These are now superseded by the RxLists above, but keeping them as streams if needed
-  Stream<List<Note>> get archivedNotesStream => _firestoreService.getNotes(isArchived: true, isDeleted: false);
-  Stream<List<Note>> get trashNotesStream => _firestoreService.getNotes(isDeleted: true);
-  Stream<List<Note>> get favoriteNotesStream => _firestoreService.getNotes(isFavorite: true, isDeleted: false);
+  Stream<List<Note>> get archivedNotesStream => _dbService.getNotes(isArchived: true, isDeleted: false);
+  Stream<List<Note>> get trashNotesStream => _dbService.getNotes(isDeleted: true);
+  Stream<List<Note>> get favoriteNotesStream => _dbService.getNotes(isFavorite: true, isDeleted: false);
   
-  Stream<int> get noteCount => _firestoreService.getNoteCount();
+  Stream<int> get noteCount => _dbService.getNoteCount();
 }

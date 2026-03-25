@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -416,29 +415,13 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
               ),
             ],
           ),
-          child: ClipOval(
-            child: CachedNetworkImage(
-              imageUrl: logoUrl,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(color),
-                  ),
-                ),
-              ),
-              errorWidget: (context, url, error) => Center(
-                child: Text(
-                  symbol,
-                  style: GoogleFonts.outfit(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+          child: Center(
+            child: Text(
+              symbol,
+              style: GoogleFonts.outfit(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
               ),
             ),
           ),

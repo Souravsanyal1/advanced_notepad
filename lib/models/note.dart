@@ -1,18 +1,35 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive/hive.dart';
 
-class Note {
+part 'note.g.dart';
+
+@HiveType(typeId: 0)
+class Note extends HiveObject {
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   final String title;
+  @HiveField(2)
   final String content;
+  @HiveField(3)
   final int color;
+  @HiveField(4)
   final DateTime createdAt;
+  @HiveField(5)
   final DateTime updatedAt;
+  @HiveField(6)
   final bool isPinned;
+  @HiveField(7)
   final bool isFavorite;
+  @HiveField(8)
   final bool isArchived;
+  @HiveField(9)
   final String? imageUrl;
+  @HiveField(10)
   final List<String> labels;
+  @HiveField(11)
   final bool isDeleted;
+  @HiveField(12)
   final String? signatureUrl;
 
   Note({
