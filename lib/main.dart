@@ -8,6 +8,7 @@ import 'screens/about_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/developer_info_screen.dart';
 import 'screens/favorites_screen.dart';
+import 'screens/donation_screen.dart';
 
 import 'theme/app_theme.dart';
 import 'services/theme_service.dart';
@@ -48,6 +49,7 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/trash', page: () => const TrashScreen()),
         GetPage(name: '/about', page: () => const AboutScreen()),
         GetPage(name: '/developer-info', page: () => const DeveloperInfoScreen()),
+        GetPage(name: '/donation', page: () => const DonationScreen()),
       ],
     ));
   }
