@@ -8,9 +8,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:37876147762:android:4d5cacb88d55d79b11fe2b",
+        "mobilesdk_app_id": "1:37876147762:android:ca72e33f3d63d1ff11fe2b",
         "android_client_info": {
-          "package_name": "com.example.flutter_app_publish_2026"
+          "package_name": "com.app.notepad"
         }
       },
       "oauth_client": [

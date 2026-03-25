@@ -1,4 +1,4 @@
-package com.example.flutter_app_publish_2026
+package com.app.notepad
 
 import io.flutter.embedding.android.FlutterActivity
 

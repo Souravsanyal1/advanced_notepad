@@ -54,9 +54,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDp7D5be9rh6TIF99Z9Z0HSvdjjliaIHZg',
-    appId: '1:37876147762:android:4d5cacb88d55d79b11fe2b',
+    appId: '1:37876147762:android:ca72e33f3d63d1ff11fe2b',
     messagingSenderId: '37876147762',
     projectId: 'ttestt-b6048',
+    databaseURL: 'https://ttestt-b6048-default-rtdb.firebaseio.com',
     storageBucket: 'ttestt-b6048.firebasestorage.app',
   );
+
 }
