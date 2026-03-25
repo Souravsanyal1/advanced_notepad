@@ -24,6 +24,7 @@ class NoteController extends GetxController {
   final RxString selectedLabel = ''.obs;
   final Rx<NoteFilter> currentFilter = NoteFilter.all.obs;
   final Rx<DateTime?> selectedDate = Rx<DateTime?>(null);
+  final RxBool isLoading = false.obs;
 
   @override
   void onInit() {
@@ -188,5 +189,18 @@ class NoteController extends GetxController {
   Stream<List<Note>> get trashNotesStream => _dbService.getNotes(isDeleted: true);
   Stream<List<Note>> get favoriteNotesStream => _dbService.getNotes(isFavorite: true, isDeleted: false);
   
+  Future<void> fetchNotes() async {
+    isLoading.value = true;
+    try {
+      // Small delay to show off the beautiful shimmers
+      await Future.delayed(const Duration(milliseconds: 800));
+      _listenToNotes();
+      _listenToLabels();
+      _listenToSpecialLists();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   Stream<int> get noteCount => _dbService.getNoteCount();
 }

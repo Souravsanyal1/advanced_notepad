@@ -17,6 +17,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 
+import 'package:showcaseview/showcaseview.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -40,7 +42,11 @@ void main() async {
 
   Get.put(NoteController());
   
-  runApp(const MyApp());
+  runApp(
+    ShowCaseWidget(
+      builder: (context) => const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

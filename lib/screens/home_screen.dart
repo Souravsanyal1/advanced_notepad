@@ -11,8 +11,10 @@ import 'package:upgrader/upgrader.dart';
 import 'edit_note_screen.dart';
 
 import 'package:get/get.dart';
+import 'package:showcaseview/showcaseview.dart';
 import '../models/note.dart';
 import '../controllers/note_controller.dart';
+import '../widgets/shimmer_widgets.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,13 +30,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String? _profileImageUrl;
   late AnimationController _rotationController;
 
+  // Showcase Keys
+  final GlobalKey _menuKey = GlobalKey();
+  final GlobalKey _searchKey = GlobalKey();
+  final GlobalKey _filterKey = GlobalKey();
+  final GlobalKey _profileKey = GlobalKey();
+  final GlobalKey _addNoteKey = GlobalKey();
+  final GlobalKey _labelKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
+    _profileService.getProfilePhoto().then((url) {
+      if (mounted) setState(() => _profileImageUrl = url);
+    });
+
     _rotationController = AnimationController(
-      vsync: this,
       duration: const Duration(seconds: 10),
+      vsync: this,
     )..repeat();
+
+    // Trigger Showcase after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showFeatureDiscovery();
+    });
     _profileService.addListener(_loadProfile);
     _loadProfile();
     
@@ -45,6 +64,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         _noteController.setSelectedLabel(routeLabel);
       }
     });
+  }
+
+  void _showFeatureDiscovery() async {
+    // Only show once per session or use a persistence flag
+    final isFirstLaunch = !Get.isRegistered<bool>(tag: 'showcase_shown');
+    if (isFirstLaunch) {
+      ShowCaseWidget.of(context).startShowCase([
+        _menuKey,
+        _labelKey,
+        _searchKey,
+        _filterKey,
+        _profileKey,
+        _addNoteKey,
+      ]);
+      Get.put(true, tag: 'showcase_shown');
+    }
   }
 
   @override
@@ -88,77 +123,66 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () => _noteController.setSelectedLabel(null),
                 )
-              : IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                )),
+              : Showcase(
+              key: _menuKey,
+              description: 'Access your categories and settings here',
+              child: IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+            )),
             actions: [
-              Obx(() => IconButton(
-                onPressed: () => _showFilterSheet(context), 
-                icon: Icon(
-                  _noteController.currentFilter.value == NoteFilter.all 
-                    ? Icons.filter_list_rounded 
-                    : Icons.filter_alt_rounded,
-                  color: _noteController.currentFilter.value == NoteFilter.all 
-                    ? null 
-                    : theme.colorScheme.primary,
+              Showcase(
+                key: _filterKey,
+                description: 'Filter notes by date, images, or signature',
+                child: IconButton(
+                  icon: const Icon(Icons.tune),
+                  onPressed: () => _showFilterSheet(context),
                 ),
-              )),
-              GestureDetector(
-                onTap: () => Scaffold.of(context).openDrawer(),
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 16, top: 4, bottom: 4),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Rotating Rainbow Border
-                      RotationTransition(
-                        turns: _rotationController,
-                        child: Container(
-                          width: 42,
-                          height: 42,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: SweepGradient(
-                              colors: [
-                                Colors.red,
-                                Colors.orange,
-                                Colors.yellow,
-                                Colors.green,
-                                Colors.blue,
-                                Colors.indigo,
-                                Colors.purple,
-                                Colors.red,
-                              ],
-                            ),
-                          ),
+              ),
+              const SizedBox(width: 8),
+              Showcase(
+                key: _profileKey,
+                description: 'View and manage your profile',
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    _showProfileOptions(context);
+                  },
+                  child: RotationTransition(
+                    turns: _rotationController,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const SweepGradient(
+                          colors: [
+                            Colors.blue,
+                            Colors.purple,
+                            Colors.pink,
+                            Colors.orange,
+                            Colors.yellow,
+                            Colors.green,
+                            Colors.blue,
+                          ],
                         ),
                       ),
-                      // Inner background to mask the border
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: theme.brightness == Brightness.dark ? Colors.black : Colors.white,
-                        ),
-                      ),
-                      CircleAvatar(
-                        radius: 17,
-                        backgroundColor: theme.colorScheme.primaryContainer,
+                      child: CircleAvatar(
+                        radius: 16,
                         backgroundImage: _profileImageUrl != null
                             ? (_profileImageUrl!.startsWith('http')
                                 ? CachedNetworkImageProvider(_profileImageUrl!)
                                 : FileImage(File(_profileImageUrl!)) as ImageProvider)
                             : null,
                         child: _profileImageUrl == null
-                            ? Icon(Icons.person, color: theme.colorScheme.onPrimaryContainer, size: 18)
+                            ? const Icon(Icons.person, size: 20)
                             : null,
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
+              const SizedBox(width: 16),
             ],
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(70),
@@ -183,32 +207,53 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                     ],
                   ),
-                  child: TextField(
-                    onChanged: (value) => _searchQuery.value = value,
-                    decoration: const InputDecoration(
-                      hintText: 'Search your notes...',
-                      prefixIcon: Icon(Icons.search, size: 20),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 14),
+                  child: Showcase(
+                    key: _searchKey,
+                    description: 'Search through your notes instantly',
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search notes...',
+                        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      onChanged: (value) => _searchQuery.value = value,
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
-        body: Column(
-          children: [
-            _buildLabelSelector(theme),
-            Expanded(
-              child: Obx(() {
-                final filteredNotes = _noteController.filteredNotes.where((note) {
-                  return note.title.toLowerCase().contains(_searchQuery.value.toLowerCase()) ||
-                      note.content.toLowerCase().contains(_searchQuery.value.toLowerCase());
-                }).toList();
+            ),
+            SliverToBoxAdapter(
+              child: Showcase(
+                key: _labelKey,
+                description: 'Filter notes by your custom labels',
+                child: _buildLabelSelector(theme),
+              ),
+            ),
+          ],
+        body: RefreshIndicator(
+          onRefresh: () async {
+            HapticFeedback.mediumImpact();
+            await _noteController.fetchNotes();
+          },
+          child: Obx(() {
+            if (_noteController.isLoading.value) {
+              return const NoteGridShimmer();
+            }
 
-                if (filteredNotes.isEmpty) {
-                  return Center(
+            final notes = _noteController.filteredNotes.where((note) {
+              if (_searchQuery.value.isEmpty) return true;
+              return note.title.toLowerCase().contains(_searchQuery.value.toLowerCase()) ||
+                  note.content.toLowerCase().contains(_searchQuery.value.toLowerCase());
+            }).toList();
+
+            if (notes.isEmpty) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -222,148 +267,152 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          _searchQuery.isEmpty ? 'Begin your journey' : 'No matches found',
+                          _searchQuery.value.isEmpty ? 'Begin your journey' : 'No matches found',
                           style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _searchQuery.isEmpty ? 'Tap the button below to create a note' : 'Try a different keyword',
+                          _searchQuery.value.isEmpty ? 'Tap the button below to create a note' : 'Try a different keyword',
                           style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
                         ),
                       ],
                     ),
-                  );
-                }
-
-                final pinnedNotes = filteredNotes.where((n) => n.isPinned).toList();
-                final otherNotes = filteredNotes.where((n) => !n.isPinned).toList();
-
-                return AnimationLimiter(
-                  child: CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      if (pinnedNotes.isNotEmpty) ...[
-                        const SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                            child: Text('PINNED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
-                          ),
-                        ),
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          sliver: SliverGrid.count(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                            childAspectRatio: 0.85,
-                            children: pinnedNotes.map((note) {
-                              final index = pinnedNotes.indexOf(note);
-                              return AnimationConfiguration.staggeredGrid(
-                                position: index,
-                                duration: const Duration(milliseconds: 400),
-                                columnCount: 2,
-                                child: ScaleAnimation(
-                                  child: FadeInAnimation(
-                                    child: OpenContainer(
-                                      transitionDuration: const Duration(milliseconds: 500),
-                                      openColor: Color(note.color),
-                                      closedColor: Colors.transparent,
-                                      closedElevation: 0,
-                                      openElevation: 0,
-                                      closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                      openBuilder: (context, action) => EditNoteScreen(note: note),
-                                      closedBuilder: (context, action) => NoteCard(
-                                        note: note, 
-                                        onTap: action,
-                                        onLongPress: () {
-                                          HapticFeedback.mediumImpact();
-                                          _showNoteOptions(note);
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ],
-                      if (otherNotes.isNotEmpty) ...[
-                        const SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-                            child: Text('OTHERS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
-                          ),
-                        ),
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          sliver: SliverGrid.count(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                            childAspectRatio: 0.85,
-                            children: otherNotes.map((note) {
-                              final index = otherNotes.indexOf(note);
-                              final staggeredIndex = index + pinnedNotes.length;
-                              return AnimationConfiguration.staggeredGrid(
-                                position: staggeredIndex,
-                                duration: const Duration(milliseconds: 400),
-                                columnCount: 2,
-                                child: SlideAnimation(
-                                  verticalOffset: 50.0,
-                                  child: FadeInAnimation(
-                                    child: OpenContainer(
-                                      transitionDuration: const Duration(milliseconds: 500),
-                                      openColor: Color(note.color),
-                                      closedColor: Colors.transparent,
-                                      closedElevation: 0,
-                                      openElevation: 0,
-                                      closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                      openBuilder: (context, action) => EditNoteScreen(note: note),
-                                      closedBuilder: (context, action) => NoteCard(
-                                        note: note, 
-                                        onTap: action,
-                                        onLongPress: () {
-                                          HapticFeedback.mediumImpact();
-                                          _showNoteOptions(note);
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                        const SliverToBoxAdapter(child: SizedBox(height: 80)),
-                      ],
-                    ],
                   ),
-                );
-              }),
-            ),
-          ],
+                ),
+              );
+            }
+
+            final pinnedNotes = notes.where((n) => n.isPinned).toList();
+            final otherNotes = notes.where((n) => !n.isPinned).toList();
+
+            return AnimationLimiter(
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  if (pinnedNotes.isNotEmpty) ...[
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Text('PINNED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      sliver: SliverGrid.count(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: 0.85,
+                        children: pinnedNotes.map((note) {
+                          final index = pinnedNotes.indexOf(note);
+                          return AnimationConfiguration.staggeredGrid(
+                            position: index,
+                            duration: const Duration(milliseconds: 400),
+                            columnCount: 2,
+                            child: ScaleAnimation(
+                              child: FadeInAnimation(
+                                child: OpenContainer(
+                                  transitionDuration: const Duration(milliseconds: 500),
+                                  openColor: Color(note.color),
+                                  closedColor: Colors.transparent,
+                                  closedElevation: 0,
+                                  openElevation: 0,
+                                  closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                  openBuilder: (context, action) => EditNoteScreen(note: note),
+                                  closedBuilder: (context, action) => NoteCard(
+                                    note: note, 
+                                    onTap: action,
+                                    onLongPress: () {
+                                      HapticFeedback.mediumImpact();
+                                      _showNoteOptions(note);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                  if (otherNotes.isNotEmpty) ...[
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+                        child: Text('OTHERS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      sliver: SliverGrid.count(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: 0.85,
+                        children: otherNotes.map((note) {
+                          final index = otherNotes.indexOf(note);
+                          final staggeredIndex = index + pinnedNotes.length;
+                          return AnimationConfiguration.staggeredGrid(
+                            position: staggeredIndex,
+                            duration: const Duration(milliseconds: 400),
+                            columnCount: 2,
+                            child: SlideAnimation(
+                              verticalOffset: 50.0,
+                              child: FadeInAnimation(
+                                child: OpenContainer(
+                                  transitionDuration: const Duration(milliseconds: 500),
+                                  openColor: Color(note.color),
+                                  closedColor: Colors.transparent,
+                                  closedElevation: 0,
+                                  openElevation: 0,
+                                  closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                  openBuilder: (context, action) => EditNoteScreen(note: note),
+                                  closedBuilder: (context, action) => NoteCard(
+                                    note: note, 
+                                    onTap: action,
+                                    onLongPress: () {
+                                      HapticFeedback.mediumImpact();
+                                      _showNoteOptions(note);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                  const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                ],
+              ),
+            );
+          }),
         ),
       ),
     ),
-      floatingActionButton: OpenContainer(
-        transitionDuration: const Duration(milliseconds: 500),
-        openColor: theme.colorScheme.surface,
-        closedElevation: 6,
-        closedColor: theme.colorScheme.primaryContainer,
-        closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        openBuilder: (context, action) => const EditNoteScreen(),
-        closedBuilder: (context, action) => SizedBox(
-          height: 56,
-          width: 140,
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.add, color: theme.colorScheme.onPrimaryContainer),
-                const SizedBox(width: 8),
-                Text('New Note', style: TextStyle(color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold)),
-              ],
+      floatingActionButton: Showcase(
+        key: _addNoteKey,
+        description: 'Create a new note instantly',
+        child: OpenContainer(
+          transitionDuration: const Duration(milliseconds: 500),
+          openColor: theme.colorScheme.surface,
+          closedElevation: 6,
+          closedColor: theme.colorScheme.primaryContainer,
+          closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          openBuilder: (context, action) => const EditNoteScreen(),
+          closedBuilder: (context, action) => SizedBox(
+            height: 56,
+            width: 140,
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add, color: theme.colorScheme.onPrimaryContainer),
+                  const SizedBox(width: 8),
+                  Text('New Note', style: TextStyle(color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
           ),
         ),
@@ -447,39 +496,42 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Select Labels'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Obx(() => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ..._noteController.labels.map((label) {
-                final isSelected = note.labels.contains(label);
-                return GestureDetector(
-                  onLongPress: () {
-                    HapticFeedback.heavyImpact();
-                    Navigator.pop(context); // Close selection dialog
-                    _showDeleteLabelDialog(label);
-                  },
-                  child: CheckboxListTile(
-                    title: Text(label),
-                    value: isSelected,
-                    onChanged: (value) {
-                      if (value == true) {
-                        _noteController.addLabelToNote(note, label);
-                      } else {
-                        _noteController.removeLabelFromNote(note, label);
-                      }
+        content: StatefulBuilder(
+          builder: (context, setDialogState) => SizedBox(
+            width: double.maxFinite,
+            child: Obx(() => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ..._noteController.labels.map((label) {
+                  final isSelected = note.labels.contains(label);
+                  return GestureDetector(
+                    onLongPress: () {
+                      HapticFeedback.heavyImpact();
+                      Navigator.pop(context); // Close selection dialog
+                      _showDeleteLabelDialog(label);
                     },
+                    child: CheckboxListTile(
+                      title: Text(label),
+                      value: isSelected,
+                      onChanged: (value) async {
+                        if (value == true) {
+                          await _noteController.addLabelToNote(note, label);
+                        } else {
+                          await _noteController.removeLabelFromNote(note, label);
+                        }
+                        setDialogState(() {}); // Trigger local rebuild
+                      },
+                    ),
+                  );
+                }),
+                if (_noteController.labels.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text('No labels created yet.'),
                   ),
-                );
-              }),
-              if (_noteController.labels.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('No labels created yet.'),
-                ),
-            ],
-          )),
+              ],
+            )),
+          ),
         ),
         actions: [
           TextButton(
@@ -557,12 +609,58 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     });
   }
 
-  void _showDeleteLabelDialog(String labelName) {
+  void _showProfileOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: const Text('Developer Info'),
+              onTap: () {
+                Navigator.pop(context);
+                Get.toNamed('/developer-info');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.volunteer_activism_outlined),
+              title: const Text('Donate / Support'),
+              onTap: () {
+                Navigator.pop(context);
+                Get.toNamed('/donation');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('About App'),
+              onTap: () {
+                Navigator.pop(context);
+                Get.toNamed('/about');
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteLabelDialog(String label) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Label'),
-        content: Text('Are you sure you want to delete the label "$labelName"? This will remove it from all notes.'),
+        content: Text('Are you sure you want to delete the label "$label"? This will not delete the notes.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -571,10 +669,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _noteController.deleteLabel(labelName);
+              _noteController.deleteLabel(label);
               Get.snackbar(
                 'Label Deleted',
-                'Label "$labelName" has been removed',
+                'Label "$label" has been removed',
                 snackPosition: SnackPosition.BOTTOM,
                 backgroundColor: Colors.red.withValues(alpha: 0.1),
                 colorText: Colors.red,

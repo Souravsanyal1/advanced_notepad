@@ -183,32 +183,35 @@ class FavoritesScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Select Labels'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Obx(() => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ...noteController.labels.map((label) {
-                final isSelected = note.labels.contains(label);
-                return CheckboxListTile(
-                  title: Text(label),
-                  value: isSelected,
-                  onChanged: (value) {
-                    if (value == true) {
-                      noteController.addLabelToNote(note, label);
-                    } else {
-                      noteController.removeLabelFromNote(note, label);
-                    }
-                  },
-                );
-              }),
-              if (noteController.labels.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('No labels created yet.'),
-                ),
-            ],
-          )),
+        content: StatefulBuilder(
+          builder: (context, setDialogState) => SizedBox(
+            width: double.maxFinite,
+            child: Obx(() => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ...noteController.labels.map((label) {
+                  final isSelected = note.labels.contains(label);
+                  return CheckboxListTile(
+                    title: Text(label),
+                    value: isSelected,
+                    onChanged: (value) async {
+                      if (value == true) {
+                        await noteController.addLabelToNote(note, label);
+                      } else {
+                        await noteController.removeLabelFromNote(note, label);
+                      }
+                      setDialogState(() {});
+                    },
+                  );
+                }),
+                if (noteController.labels.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text('No labels created yet.'),
+                  ),
+              ],
+            )),
+          ),
         ),
         actions: [
           TextButton(
