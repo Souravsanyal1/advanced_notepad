@@ -62,7 +62,7 @@ class _PremiumFabState extends State<PremiumFab> with TickerProviderStateMixin {
               turns: _rotationController,
               child: Container(
                 height: 64,
-                width: 169,
+                width: 194,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(32),
                   gradient: const SweepGradient(
@@ -79,7 +79,7 @@ class _PremiumFabState extends State<PremiumFab> with TickerProviderStateMixin {
             ),
             Container(
               height: 60,
-              width: 165,
+              width: 190,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(30),
                 color: isDark ? Colors.black : Colors.white,
@@ -125,13 +125,16 @@ class _PremiumFabState extends State<PremiumFab> with TickerProviderStateMixin {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Text(
-                          widget.label.toUpperCase(),
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2.0,
-                            fontSize: 13,
+                        Flexible(
+                          child: Text(
+                            widget.label.toUpperCase(),
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2.0,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
