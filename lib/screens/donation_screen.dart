@@ -237,7 +237,12 @@ class _DonationScreenState extends State<DonationScreen>
             border: Border.all(color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.1)),
           ),
           child: ColorFiltered(
-            colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.saturation),
+            colorFilter: const ColorFilter.matrix(<double>[
+              0.2126, 0.7152, 0.0722, 0, 0,
+              0.2126, 0.7152, 0.0722, 0, 0,
+              0.2126, 0.7152, 0.0722, 0, 0,
+              0,      0,      0,      1, 0,
+            ]),
             child: CachedNetworkImage(
               imageUrl: token['logo'],
               placeholder: (context, url) => const AppLoadingWidget(size: 15),

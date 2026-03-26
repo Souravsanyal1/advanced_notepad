@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -517,16 +518,29 @@ class _AppDrawerState extends State<AppDrawer>
   Widget _buildBottomItem(IconData icon, String label, VoidCallback onTap) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ListTile(
-        onTap: onTap,
-        dense: true,
-        leading: Icon(icon, size: 20, color: isDark ? Colors.white54 : Colors.black54),
-        title: Text(
-          label,
-          style: GoogleFonts.outfit(fontSize: 14, color: isDark ? Colors.white70 : Colors.black87),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Container(
+        decoration: BoxDecoration(
+          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+          ),
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: ListTile(
+          onTap: onTap,
+          dense: true,
+          leading: Icon(icon, size: 20, color: isDark ? Colors.white54 : Colors.black54),
+          title: Text(
+            label,
+            style: GoogleFonts.outfit(
+              fontSize: 14, 
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white70 : Colors.black87,
+            ),
+          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       ),
     );
   }
