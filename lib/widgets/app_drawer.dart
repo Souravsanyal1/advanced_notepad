@@ -282,7 +282,7 @@ class _AppDrawerState extends State<AppDrawer>
 
   Widget _buildPremiumHeader(ThemeData theme, bool isDark) {
     return Container(
-      height: 220,
+      height: 250,
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
@@ -375,28 +375,58 @@ class _AppDrawerState extends State<AppDrawer>
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _userName.toUpperCase(),
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 22,
-                        letterSpacing: 2.0,
-                        color: isDark ? Colors.white : Colors.black,
+              const SizedBox(height: 12),
+              // Name Section with Monochrome "Caution" Striped Banner (Monochrome version)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    stops: const [0, 0.2, 0.2, 0.4, 0.4, 0.6, 0.6, 0.8, 0.8, 1.0],
+                    colors: [
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.black.withValues(alpha: 0.1),
+                      Colors.black.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.black.withValues(alpha: 0.1),
+                      Colors.black.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.1),
+                    ],
+                    tileMode: TileMode.repeated,
+                  ),
+                  border: Border.all(color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _userName.toUpperCase(),
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18, // Slightly smaller to fit banner
+                          letterSpacing: 2.0,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.edit_rounded, size: 18, 
-                      color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5)),
-                    onPressed: _editName,
-                  ),
-                ],
+                    IconButton(
+                      icon: Icon(Icons.edit_rounded, size: 16, 
+                        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.6)),
+                      onPressed: _editName,
+                      constraints: const BoxConstraints(),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(height: 8),
               Text(
                 'PREMIUM MEMBER',
                 style: GoogleFonts.outfit(

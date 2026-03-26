@@ -50,15 +50,15 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
 
   final List<int> _colors = [
     0xFFFFFFFF, // white
-    0xFFF8D7DA, // soft red
-    0xFFFFF3CD, // soft yellow
-    0xFFD4EDDA, // soft green
-    0xFFD1ECF1, // soft teal
-    0xFFCCE5FF, // soft blue
-    0xFFE2E3E5, // soft grey
-    0xFFF3E5F5, // soft purple
-    0xFFFCE4EC, // soft pink
-    0xFFE8F5E9, // mint
+    0xFFFAFAFA, // snow
+    0xFFF5F5F5, // smoke
+    0xFFEEEEEE, // light grey
+    0xFFE0E0E0, // silver
+    0xFFBDBDBD, // grey
+    0xFF9E9E9E, // dark grey
+    0xFF757575, // charcoal
+    0xFF424242, // onyx
+    0xFF212121, // jet black
   ];
 
   @override
@@ -679,7 +679,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                       _buildToolbarAction(
                         Icons.delete_outline_rounded,
                         'Delete',
-                        Colors.red.withValues(alpha: 0.8),
+                        contrastColor,
                         _deleteNote,
                       ),
                   ],

@@ -129,13 +129,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     shape: BoxShape.circle,
                     gradient: SweepGradient(
                       colors: [
-                        Colors.blue,
-                        Colors.purple,
-                        Colors.pink,
-                        Colors.orange,
-                        Colors.yellow,
-                        Colors.green,
-                        Colors.blue,
+                        Colors.white,
+                        Colors.grey,
+                        Colors.black,
+                        Colors.grey,
+                        Colors.white,
                       ],
                     ),
                   ),
