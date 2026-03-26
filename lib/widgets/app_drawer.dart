@@ -17,7 +17,7 @@ class AppDrawer extends StatefulWidget {
 }
 
 class _AppDrawerState extends State<AppDrawer>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final ProfileService _profileService = ProfileService();
   final ImagePicker _picker = ImagePicker();
   final NoteController _noteController = Get.find<NoteController>();
