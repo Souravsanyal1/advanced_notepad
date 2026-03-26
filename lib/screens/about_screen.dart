@@ -54,7 +54,7 @@ class AboutScreen extends StatelessWidget {
                     child: FadeInAnimation(child: widget),
                   ),
                   children: [
-                    const Hero(
+                    Hero(
                       tag: 'app_logo',
                       child: Container(
                         padding: EdgeInsets.all(4),
