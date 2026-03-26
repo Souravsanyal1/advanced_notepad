@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:get/get.dart';
 import '../services/profile_service.dart';
 import '../controllers/note_controller.dart';
+import '../services/theme_service.dart';
 import 'loading_widget.dart';
 
 
@@ -524,10 +525,55 @@ class _AppDrawerState extends State<AppDrawer>
   }
 
   Widget _buildBottomSection(ThemeData theme, bool isDark) {
+    final themeService = Get.find<ThemeService>();
+    
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
         children: [
+          // Theme Mode Selection
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                ),
+              ),
+              child: Obx(() => Row(
+                children: [
+                  _buildThemeOption(
+                    mode: ThemeMode.light,
+                    icon: Icons.light_mode_rounded,
+                    label: 'LIGHT',
+                    isSelected: themeService.themeMode == ThemeMode.light,
+                    isDark: isDark,
+                    onTap: () => themeService.setThemeMode(ThemeMode.light),
+                  ),
+                  _buildThemeOption(
+                    mode: ThemeMode.dark,
+                    icon: Icons.dark_mode_rounded,
+                    label: 'DARK',
+                    isSelected: themeService.themeMode == ThemeMode.dark,
+                    isDark: isDark,
+                    onTap: () => themeService.setThemeMode(ThemeMode.dark),
+                  ),
+                  _buildThemeOption(
+                    mode: ThemeMode.system,
+                    icon: Icons.settings_brightness_rounded,
+                    label: 'SYSTEM',
+                    isSelected: themeService.themeMode == ThemeMode.system,
+                    isDark: isDark,
+                    onTap: () => themeService.setThemeMode(ThemeMode.system),
+                  ),
+                ],
+              )),
+            ),
+          ),
+          const SizedBox(height: 8),
           _buildBottomItem(Icons.info_outline, 'About', () => Get.toNamed('/about')),
           _buildBottomItem(Icons.favorite_rounded, 'Support Us', () => Get.toNamed('/donation')),
           const SizedBox(height: 12),
@@ -541,6 +587,65 @@ class _AppDrawerState extends State<AppDrawer>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildThemeOption({
+    required ThemeMode mode,
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected 
+                ? (isDark ? Colors.white : Colors.black) 
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isSelected ? [
+              BoxShadow(
+                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
+                blurRadius: 8,
+                spreadRadius: 1,
+              )
+            ] : [],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected 
+                    ? (isDark ? Colors.black : Colors.white) 
+                    : (isDark ? Colors.white38 : Colors.black38),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.outfit(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                  color: isSelected 
+                      ? (isDark ? Colors.black : Colors.white) 
+                      : (isDark ? Colors.white38 : Colors.black38),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
