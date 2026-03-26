@@ -5,11 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:get/get.dart';
 import '../services/profile_service.dart';
-import '../services/local_storage_service.dart';
-import '../services/theme_service.dart';
-import '../services/photo_service.dart';
 import '../controllers/note_controller.dart';
 import 'loading_widget.dart';
+
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -18,18 +16,25 @@ class AppDrawer extends StatefulWidget {
   State<AppDrawer> createState() => _AppDrawerState();
 }
 
-class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMixin {
+class _AppDrawerState extends State<AppDrawer>
+    with SingleTickerProviderStateMixin {
   final ProfileService _profileService = ProfileService();
-  final LocalStorageService _storageService = LocalStorageService();
-  final PhotoService _photoService = PhotoService();
   final ImagePicker _picker = ImagePicker();
   final NoteController _noteController = Get.find<NoteController>();
-  final ThemeService _themeService = Get.find<ThemeService>();
+
 
   late AnimationController _rotationController;
+  late AnimationController _sheenController;
+  late Animation<double> _sheenAnimation;
+  
+  // For the sliding pill
+  int _selectedIndex = 0;
+  late AnimationController _pillController;
+  late Animation<double> _pillPositionAnimation;
 
-  String? _profileImageUrl;
+  // Profile data
   String _userName = 'Advanced User';
+  String? _profileImageUrl;
   bool _isUploadingProfile = false;
 
   @override
@@ -37,8 +42,26 @@ class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMix
     super.initState();
     _rotationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10),
+      duration: const Duration(seconds: 15),
     )..repeat();
+
+    _sheenController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+
+    _sheenAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _sheenController, curve: Curves.easeInOut),
+    );
+
+    _pillController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _pillPositionAnimation = Tween<double>(begin: 0, end: 0).animate(
+      CurvedAnimation(parent: _pillController, curve: Curves.elasticOut),
+    );
+
     _profileService.addListener(_loadProfileData);
     _loadProfileData();
   }
@@ -46,17 +69,19 @@ class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMix
   @override
   void dispose() {
     _rotationController.dispose();
+    _sheenController.dispose();
+    _pillController.dispose();
     _profileService.removeListener(_loadProfileData);
     super.dispose();
   }
 
   Future<void> _loadProfileData() async {
-    final url = await _profileService.getProfilePhoto();
     final name = await _profileService.getUserName();
+    final url = await _profileService.getProfilePhoto();
     if (mounted) {
       setState(() {
-        _profileImageUrl = url;
         _userName = name;
+        _profileImageUrl = url;
       });
     }
   }
@@ -65,56 +90,32 @@ class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMix
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 50,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 75,
       );
-      if (image == null) return;
-
-      final bool hasPermission = await _photoService.requestPermissions();
-      if (!hasPermission) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Gallery permission is required to update profile photo.'),
-              action: SnackBarAction(
-                label: 'Settings',
-                onPressed: () => _photoService.openSettings(),
-              ),
-            ),
-          );
-        }
-        return;
-      }
-
-      setState(() => _isUploadingProfile = true);
-
-      final String? savedPath = await _storageService.saveImage(File(image.path), 'profile_photos');
-
-      if (savedPath != null) {
-        if (_profileImageUrl != null && !_profileImageUrl!.startsWith('http')) {
-          await _storageService.deleteImage(_profileImageUrl!);
-        }
-
-        await _profileService.setProfilePhoto(savedPath);
-        if (mounted) {
-          setState(() {
-            _profileImageUrl = savedPath;
-            _isUploadingProfile = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile photo updated successfully!')),
-          );
-        }
-      } else {
+      
+      if (image != null) {
+        setState(() => _isUploadingProfile = true);
+        await _profileService.setProfilePhoto(image.path);
         setState(() => _isUploadingProfile = false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to upload profile photo.')),
-          );
-        }
+        Get.snackbar(
+          'Success',
+          'Profile photo updated',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black,
+          colorText: Colors.white,
+        );
       }
     } catch (e) {
-      setState(() => _isUploadingProfile = false);
-      debugPrint('Error updating profile: $e');
+      if (mounted) setState(() => _isUploadingProfile = false);
+      Get.snackbar(
+        'Error',
+        'Failed to pick image: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 
@@ -123,17 +124,27 @@ class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMix
     final newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Name'),
+        backgroundColor: Colors.black,
+        title: Text('EDIT NAME', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(hintText: 'Enter your name'),
           autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Enter name',
+            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           TextButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Save'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('SAVE', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -141,594 +152,381 @@ class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMix
 
     if (newName != null && newName.isNotEmpty) {
       await _profileService.setUserName(newName);
-      setState(() => _userName = newName);
     }
   }
 
+  void _onItemTapped(int index) {
+    if (mounted) {
+      setState(() {
+        _selectedIndex = index;
+      });
+      _pillPositionAnimation = Tween<double>(
+        begin: _pillPositionAnimation.value,
+        end: index.toDouble(),
+      ).animate(
+        CurvedAnimation(parent: _pillController, curve: Curves.elasticOut),
+      );
+      _pillController.forward(from: 0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Drawer(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: theme.brightness == Brightness.dark
-                ? [
-                    theme.colorScheme.surface,
-                    theme.colorScheme.surfaceContainerLow,
-                  ]
-                : [Colors.white, const Color(0xFFF0F2F5)],
+          color: isDark ? Colors.black.withValues(alpha: 0.9) : Colors.white,
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(30),
+            bottomRight: Radius.circular(30),
           ),
         ),
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
           children: [
-          UserAccountsDrawerHeader(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: theme.brightness == Brightness.dark
-                    ? [
-                        theme.colorScheme.surfaceContainerHigh,
-                        theme.colorScheme.surfaceContainerHighest,
-                      ]
-                    : [
-                        const Color(0xFFE0C3FC),
-                        const Color(0xFF8EC5FC),
-                      ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            currentAccountPicture: GestureDetector(
-              onTap: _isUploadingProfile ? null : _pickAndUploadProfilePhoto,
+            _buildPremiumHeader(theme, isDark),
+            Expanded(
               child: Stack(
-                alignment: Alignment.center,
                 children: [
-                  // Rainbow Border with Rotation Animation
-                  RotationTransition(
-                    turns: _rotationController,
-                    child: Container(
-                      width: 76,
-                      height: 76,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: SweepGradient(
-                          colors: [
-                            Colors.red,
-                            Colors.orange,
-                            Colors.yellow,
-                            Colors.green,
-                            Colors.blue,
-                            Colors.indigo,
-                            Colors.purple,
-                            Colors.red,
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Inner Background Mask
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: theme.colorScheme.surfaceContainerHighest,
-                    ),
-                  ),
-                  CircleAvatar(
-                    radius: 34,
-                    backgroundColor: Colors.white24,
-                    backgroundImage: _profileImageUrl != null
-                        ? (_profileImageUrl!.startsWith('http')
-                            ? CachedNetworkImageProvider(_profileImageUrl!)
-                            : FileImage(File(_profileImageUrl!)) as ImageProvider)
-                        : null,
-                    child: _profileImageUrl == null && !_isUploadingProfile
-                        ? const Icon(Icons.person, size: 38, color: Colors.white)
-                        : (_profileImageUrl != null && !_profileImageUrl!.startsWith('http') && !File(_profileImageUrl!).existsSync()
-                            ? const Icon(Icons.person, size: 38, color: Colors.white)
-                            : null),
-                  ),
-                  if (_isUploadingProfile)
-                    const Center(
-                      child: AppLoadingWidget(color: Colors.white, size: 24),
-                    ),
-                  Positioned(
-                    bottom: 2,
-                    right: 2,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+                  // Sliding Pill Indicator
+                  AnimatedBuilder(
+                    animation: _pillPositionAnimation,
+                    builder: (context, child) {
+                      return Positioned(
+                        top: 2 + (_pillPositionAnimation.value * 52), // 52 is item height + margin
+                        left: 8,
+                        child: Container(
+                          width: 4,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white : Colors.black,
+                            borderRadius: BorderRadius.circular(2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
+                      );
+                    },
+                  ),
+                  ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: [
+                      _buildDrawerItem(
+                        index: 0,
+                        icon: Icons.notes_rounded,
+                        label: 'All Notes',
+                        onTap: () {
+                          _onItemTapped(0);
+                          _noteController.setSelectedLabel(null);
+                          Navigator.pop(context);
+                        },
+                        count: _noteController.allNotes.length,
                       ),
-                      child: const Icon(Icons.camera_alt, size: 10, color: Colors.white),
-                    ),
+                      _buildDrawerItem(
+                        index: 1,
+                        icon: Icons.favorite_outline_rounded,
+                        label: 'Favorites',
+                        onTap: () {
+                          _onItemTapped(1);
+                          Navigator.pop(context);
+                          Get.toNamed('/favorites');
+                        },
+                        count: _noteController.favoriteNotes.length,
+                      ),
+                      _buildDrawerItem(
+                        index: 2,
+                        icon: Icons.archive_outlined,
+                        label: 'Archive',
+                        onTap: () {
+                          _onItemTapped(2);
+                          Navigator.pop(context);
+                          Get.toNamed('/archive');
+                        },
+                        count: _noteController.archivedNotes.length,
+                      ),
+                      _buildDrawerItem(
+                        index: 3,
+                        icon: Icons.delete_outline_rounded,
+                        label: 'Trash',
+                        onTap: () {
+                          _onItemTapped(3);
+                          Navigator.pop(context);
+                          Get.toNamed('/trash');
+                        },
+                        count: _noteController.trashNotes.length,
+                      ),
+                      const Divider(indent: 20, endIndent: 20, height: 32),
+                      _buildLabelSection(theme),
+                    ],
                   ),
                 ],
               ),
             ),
-            accountName: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _userName,
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: _editName,
-                  child: const Icon(Icons.edit_note_rounded, size: 20, color: Colors.white70),
-                ),
-              ],
-            ),
-            accountEmail: null,
-          ),
-          Obx(() => _DrawerItem(
-            icon: Icons.notes_rounded,
-            label: 'All Notes',
-            isSelected: _noteController.selectedLabel.value.isEmpty,
-            onTap: () {
-              _noteController.setSelectedLabel(null);
-              Navigator.pop(context);
-            },
-            trailing: _buildBadge(_noteController.allNotes.length, theme),
-          )),
-          Obx(() => _DrawerItem(
-            icon: Icons.favorite_outline_rounded,
-            label: 'Favorites',
-            trailing: _buildBadge(_noteController.favoriteNotes.length, theme),
-            onTap: () {
-              Navigator.pop(context);
-              Get.toNamed('/favorites');
-            },
-          )),
-          Obx(() => _DrawerItem(
-            icon: Icons.archive_outlined,
-            label: 'Archive',
-            trailing: _buildBadge(_noteController.archivedNotes.length, theme),
-            onTap: () {
-              Navigator.pop(context);
-              Get.toNamed('/archive');
-            },
-          )),
-           Obx(() => _DrawerItem(
-            icon: Icons.delete_outline_rounded,
-            label: 'Trash',
-            trailing: _buildBadge(_noteController.trashNotes.length, theme),
-            onTap: () {
-              Navigator.pop(context);
-              Get.toNamed('/trash');
-            },
-          )),
-          _buildCustomDivider(theme),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
-            child: Text(
-              'LABELS', 
-              style: GoogleFonts.outfit(
-                fontSize: 11, 
-                fontWeight: FontWeight.bold, 
-                color: theme.colorScheme.primary.withValues(alpha: 0.6), 
-                letterSpacing: 1.5
-              )
-            ),
-          ),
-          // Personal & Work Labels (Dynamic)
-          Obx(() => Column(
-            children: _noteController.labels.map((label) {
-              final count = _noteController.allNotes.where((n) => n.labels.contains(label)).length;
-              return _DrawerItem(
-                icon: Icons.label_outline_rounded,
-                label: label,
-                isSelected: _noteController.selectedLabel.value == label,
-                trailing: _buildBadge(count, theme),
-                onTap: () {
-                  _noteController.setSelectedLabel(label);
-                  Navigator.pop(context);
-                },
-                onLongPress: () => _showDeleteLabelDialog(label),
-              );
-            }).toList(),
-          )),
+            _buildBottomSection(theme, isDark),
+          ],
+        ),
+      ),
+    );
+  }
 
-          _DrawerItem(
-            icon: Icons.add_rounded,
-            label: 'Create new Label',
-            onTap: () => _showCreateLabelDialog(),
-          ),
-
-          _buildCustomDivider(theme),
-          Obx(() => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: InkWell(
-              onTap: () => _themeService.toggleTheme(),
-              borderRadius: BorderRadius.circular(16),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: _themeService.isDarkMode 
-                      ? theme.colorScheme.primaryContainer.withValues(alpha: 0.1)
-                      : theme.colorScheme.primary.withValues(alpha: 0.05),
-                  border: Border.all(
-                    color: _themeService.isDarkMode 
-                        ? theme.colorScheme.primary.withValues(alpha: 0.2)
-                        : theme.colorScheme.primary.withValues(alpha: 0.1),
+  Widget _buildPremiumHeader(ThemeData theme, bool isDark) {
+    return Container(
+      height: 220,
+      padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+        borderRadius: const BorderRadius.only(topRight: Radius.circular(30)),
+      ),
+      child: Stack(
+        children: [
+          // Gloss Sheen Animation
+          AnimatedBuilder(
+            animation: _sheenAnimation,
+            builder: (context, child) {
+              return Positioned.fill(
+                child: FractionallySizedBox(
+                  widthFactor: 0.5,
+                  alignment: Alignment(_sheenAnimation.value, 0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.white.withValues(alpha: isDark ? 0.03 : 0.1),
+                          Colors.transparent,
+                        ],
+                        stops: const [0, 0.5, 1],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
                   ),
-                  boxShadow: [
-                    if (!_themeService.isDarkMode)
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                  ],
                 ),
-                child: Row(
+              );
+            },
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: _isUploadingProfile ? null : _pickAndUploadProfilePhoto,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _themeService.isDarkMode 
-                            ? theme.colorScheme.primary.withValues(alpha: 0.2)
-                            : Colors.amber.withValues(alpha: 0.1),
-                      ),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 400),
-                        transitionBuilder: (child, animation) {
-                          return RotationTransition(
-                            turns: animation,
-                            child: ScaleTransition(scale: animation, child: child),
-                          );
-                        },
-                        child: Icon(
-                          _themeService.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                          key: ValueKey(_themeService.isDarkMode),
-                          color: _themeService.isDarkMode ? Colors.amber[200] : Colors.amber[600],
-                          size: 20,
+                    // Monochrome Chrome Aura
+                    RotationTransition(
+                      turns: _rotationController,
+                      child: Container(
+                        width: 84,
+                        height: 84,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: SweepGradient(
+                            colors: [
+                              Color(0xFF000000),
+                              Color(0xFF333333),
+                              Color(0xFF666666),
+                              Color(0xFF999999),
+                              Color(0xFFCCCCCC),
+                              Color(0xFFFFFFFF),
+                              Color(0xFFCCCCCC),
+                              Color(0xFF999999),
+                              Color(0xFF666666),
+                              Color(0xFF333333),
+                              Color(0xFF000000),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Appearance',
-                            style: GoogleFonts.outfit(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          Text(
-                            _themeService.isDarkMode ? 'Dark Mode Active' : 'Light Mode Active',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: 44,
-                      height: 24,
+                    Container(
+                      width: 78,
+                      height: 78,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: _themeService.isDarkMode 
-                            ? theme.colorScheme.primary 
-                            : Colors.grey[300],
+                        shape: BoxShape.circle,
+                        color: isDark ? Colors.black : Colors.white,
                       ),
-                      child: Stack(
-                        children: [
-                          AnimatedPositioned(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            left: _themeService.isDarkMode ? 22 : 2,
-                            top: 2,
-                            child: Container(
-                              width: 20,
-                              height: 20,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    ),
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundColor: Colors.grey[800],
+                      backgroundImage: _profileImageUrl != null
+                          ? (_profileImageUrl!.startsWith('http')
+                              ? CachedNetworkImageProvider(_profileImageUrl!)
+                              : FileImage(File(_profileImageUrl!)) as ImageProvider)
+                          : null,
+                      child: _isUploadingProfile 
+                          ? const AppLoadingWidget(size: 20)
+                          : (_profileImageUrl == null
+                            ? const Icon(Icons.person, size: 40, color: Colors.white)
+                            : null),
                     ),
                   ],
                 ),
               ),
-            ),
-          )),
-          _buildCustomDivider(theme),
-          _DrawerItem(
-            icon: Icons.info_outline,
-            label: 'About',
-            onTap: () {
-              Navigator.pop(context);
-              Get.toNamed('/about');
-            },
-          ),
-          _DrawerItem(
-            icon: Icons.favorite_rounded,
-            label: 'Support the Project',
-            onTap: () {
-              Navigator.pop(context);
-              _showDonationDialog(context);
-            },
-          ),
-          _DrawerItem(
-            icon: Icons.system_update_alt,
-            label: 'Update',
-            onTap: () => _showUpdateDialog(context),
-          ),
-          _buildCustomDivider(theme),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Text(
-              'App Version: 1.0.1+2',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                fontSize: 12,
-                letterSpacing: 0.5,
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _userName.toUpperCase(),
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
+                        letterSpacing: 2.0,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.edit_rounded, size: 18, 
+                      color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5)),
+                    onPressed: _editName,
+                  ),
+                ],
               ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-  Widget _buildCustomDivider(ThemeData theme) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      height: 1,
-      color: theme.colorScheme.outline.withValues(alpha: 0.1),
-    );
-  }
-
-  Widget _buildBadge(int count, ThemeData theme) {
-    if (count == 0) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        '$count',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: theme.colorScheme.onPrimaryContainer,
-        ),
-      ),
-    );
-  }
-
-  void _showDeleteLabelDialog(String label) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Label'),
-        content: Text('Are you sure you want to delete the label "$label"? This will remove it from all notes.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await _noteController.deleteLabel(label);
-                Get.snackbar(
-                  'Success',
-                  'Label "$label" deleted',
-                  snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: Colors.green.withValues(alpha: 0.8),
-                  colorText: Colors.white,
-                );
-              } catch (e) {
-                Get.snackbar(
-                  'Error',
-                  'Failed to delete label: $e',
-                  snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: Colors.red.withValues(alpha: 0.8),
-                  colorText: Colors.white,
-                );
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
- 
-  void _showDonationDialog(BuildContext context) {
-    Get.toNamed('/donation');
-  }
-
-  void _showUpdateDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.system_update, color: Colors.blue),
-            SizedBox(width: 10),
-            Text('App Update'),
-          ],
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle_outline, size: 60, color: Colors.green),
-            SizedBox(height: 16),
-            Text(
-              'You are using the latest version!',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text('Version 1.0.0+1'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Great!'),
+              Text(
+                'PREMIUM MEMBER',
+                style: GoogleFonts.outfit(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 3.0,
+                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.4),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  void _showCreateLabelDialog() async {
-    final controller = TextEditingController();
-    final newLabel = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('New Label'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Label name',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
-    );
+  Widget _buildDrawerItem({
+    required int index,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    int? count,
+  }) {
+    final isSelected = _selectedIndex == index;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (newLabel != null && newLabel.isNotEmpty) {
-      try {
-        await _noteController.addLabel(newLabel);
-      } catch (e) {
-        Get.snackbar(
-          'Error',
-          'Failed to create label: $e',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withValues(alpha: 0.8),
-          colorText: Colors.white,
-        );
-      }
-    }
-  }
-}
-
-class _DrawerItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final VoidCallback? onLongPress;
-  final Widget? trailing;
-  final bool isSelected;
-
-  const _DrawerItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.onLongPress,
-    this.trailing,
-    this.isSelected = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: Stack(
-        children: [
-          ListTile(
-            leading: Icon(
-              icon, 
-              color: isSelected ? theme.colorScheme.primary : theme.iconTheme.color?.withValues(alpha: 0.7)
-            ),
-            title: Text(
-              label, 
-              style: GoogleFonts.outfit(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? theme.colorScheme.primary : theme.textTheme.bodyLarge?.color,
-                fontSize: 15,
-              )
-            ),
-            trailing: trailing,
-            selected: isSelected,
-            selectedTileColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.15),
-            onTap: onTap,
-            onLongPress: onLongPress,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListTile(
+        onTap: onTap,
+        dense: true,
+        leading: Icon(
+          icon,
+          color: isSelected 
+              ? (isDark ? Colors.white : Colors.black) 
+              : (isDark ? Colors.white70 : Colors.black54),
+          size: 22,
+        ),
+        title: Text(
+          label,
+          style: GoogleFonts.outfit(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 16,
+            color: isSelected 
+                ? (isDark ? Colors.white : Colors.black) 
+                : (isDark ? Colors.white70 : Colors.black54),
           ),
-          if (isSelected)
-            Positioned(
-              left: 0,
-              top: 12,
-              bottom: 12,
-              child: Container(
-                width: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(4)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                      blurRadius: 4,
-                      offset: const Offset(1, 0),
-                    ),
-                  ],
-                ),
+        ),
+        trailing: count != null ? Text(
+          count.toString(),
+          style: TextStyle(
+            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.3),
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ) : null,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Widget _buildLabelSection(ThemeData theme) {
+    return Obx(() {
+      final labels = _noteController.labels;
+      if (labels.isEmpty) return const SizedBox.shrink();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Text(
+              'LABELS',
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2.0,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
               ),
             ),
+          ),
+          ...labels.map((label) => _buildDrawerItem(
+            index: 100 + labels.indexOf(label), // Offset to avoid collisions
+            icon: Icons.label_outline_rounded,
+            label: label,
+            onTap: () {
+              _onItemTapped(100 + labels.indexOf(label));
+              _noteController.setSelectedLabel(label);
+              Navigator.pop(context);
+            },
+          )),
+        ],
+      );
+    });
+  }
+
+  Widget _buildBottomSection(ThemeData theme, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        children: [
+          _buildBottomItem(Icons.info_outline, 'About', () => Get.toNamed('/about')),
+          _buildBottomItem(Icons.favorite_rounded, 'Support Us', () => Get.toNamed('/donation')),
+          const SizedBox(height: 12),
+          Text(
+            'VERSION 1.0.2',
+            style: GoogleFonts.outfit(
+              fontSize: 10,
+              letterSpacing: 2,
+              fontWeight: FontWeight.bold,
+              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
+            ),
+          ),
         ],
       ),
     );
   }
+
+  Widget _buildBottomItem(IconData icon, String label, VoidCallback onTap) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListTile(
+        onTap: onTap,
+        dense: true,
+        leading: Icon(icon, size: 20, color: isDark ? Colors.white54 : Colors.black54),
+        title: Text(
+          label,
+          style: GoogleFonts.outfit(fontSize: 14, color: isDark ? Colors.white70 : Colors.black87),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
 }

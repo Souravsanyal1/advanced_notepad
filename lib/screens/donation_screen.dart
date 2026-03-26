@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'dart:ui';
+
 import '../widgets/loading_widget.dart';
 
 class DonationScreen extends StatefulWidget {
@@ -13,8 +13,10 @@ class DonationScreen extends StatefulWidget {
   State<DonationScreen> createState() => _DonationScreenState();
 }
 
-class _DonationScreenState extends State<DonationScreen> with SingleTickerProviderStateMixin {
+class _DonationScreenState extends State<DonationScreen>
+    with TickerProviderStateMixin {
   late AnimationController _pulseController;
+  late AnimationController _rotationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _glowAnimation;
 
@@ -26,11 +28,16 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
 
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
+
     _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    _glowAnimation = Tween<double>(begin: 10, end: 40).animate(
+    _glowAnimation = Tween<double>(begin: 10, end: 30).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
   }
@@ -38,6 +45,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
   @override
   void dispose() {
     _pulseController.dispose();
+    _rotationController.dispose();
     super.dispose();
   }
 
@@ -47,57 +55,16 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
     const String binanceId = '549323070';
 
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final colorScheme = Theme.of(context).colorScheme;
 
     final List<Map<String, dynamic>> networks = [
-      {
-        'name': 'BSC',
-        'symbol': 'BNB',
-        'color': const Color(0xFFF3BA2F),
-        'logo': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=040'
-      },
-      {
-        'name': 'Optimism',
-        'symbol': 'OP',
-        'color': const Color(0xFFFF0420),
-        'logo': 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.png?v=040'
-      },
-      {
-        'name': 'Ethereum',
-        'symbol': 'ETH',
-        'color': const Color(0xFF627EEA),
-        'logo': 'https://cryptologos.cc/logos/ethereum-eth-logo.png?v=040'
-      },
-      {
-        'name': 'Aptos',
-        'symbol': 'APT',
-        'color': const Color(0xFF2DD4BF),
-        'logo': 'https://cryptologos.cc/logos/aptos-apt-logo.png?v=040'
-      },
-      {
-        'name': 'Polygon',
-        'symbol': 'POL',
-        'color': const Color(0xFF8247E5),
-        'logo': 'https://cryptologos.cc/logos/polygon-matic-logo.png?v=040'
-      },
-      {
-        'name': 'Solana',
-        'symbol': 'SOL',
-        'color': const Color(0xFF14F195),
-        'logo': 'https://cryptologos.cc/logos/solana-sol-logo.png?v=040'
-      },
-      {
-        'name': 'opBNB',
-        'symbol': 'BNB',
-        'color': const Color(0xFFF3BA2F),
-        'logo': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=040'
-      },
-      {
-        'name': 'Arbitrum',
-        'symbol': 'ARB',
-        'color': const Color(0xFF28A0F0),
-        'logo': 'https://cryptologos.cc/logos/arbitrum-arb-logo.png?v=040'
-      },
+      {'name': 'BSC', 'symbol': 'BNB', 'logo': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=040'},
+      {'name': 'Optimism', 'symbol': 'OP', 'logo': 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.png?v=040'},
+      {'name': 'Ethereum', 'symbol': 'ETH', 'logo': 'https://cryptologos.cc/logos/ethereum-eth-logo.png?v=040'},
+      {'name': 'Aptos', 'symbol': 'APT', 'logo': 'https://cryptologos.cc/logos/aptos-apt-logo.png?v=040'},
+      {'name': 'Polygon', 'symbol': 'POL', 'logo': 'https://cryptologos.cc/logos/polygon-matic-logo.png?v=040'},
+      {'name': 'Solana', 'symbol': 'SOL', 'logo': 'https://cryptologos.cc/logos/solana-sol-logo.png?v=040'},
+      {'name': 'opBNB', 'symbol': 'BNB', 'logo': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=040'},
+      {'name': 'Arbitrum', 'symbol': 'ARB', 'logo': 'https://cryptologos.cc/logos/arbitrum-arb-logo.png?v=040'},
     ];
 
     return Scaffold(
@@ -109,399 +76,280 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
           icon: Icon(Icons.arrow_back_ios_new, color: isDarkMode ? Colors.white : Colors.black),
           onPressed: () => Get.back(),
         ),
-        title: Text(
-          'Support Us',
-          style: GoogleFonts.outfit(
-            color: isDarkMode ? Colors.white : Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text('SUPPORT US', style: GoogleFonts.outfit(
+          color: isDarkMode ? Colors.white : Colors.black,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 2,
+        )),
       ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDarkMode
-                ? [
-                    const Color(0xFF000000),
-                    const Color(0xFF121212),
-                    const Color(0xFF1A1A1A),
-                  ]
-                : [
-                    const Color(0xFFFFFFFF),
-                    const Color(0xFFF8F9FA),
-                    const Color(0xFFE9ECEF),
-                  ],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 10),
-                // Animated Heart Icon (Pulsing)
-                AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: (isDarkMode ? Colors.white : Colors.deepPurple).withValues(alpha: 0.1),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withValues(alpha: isDarkMode ? 0.3 : 0.2),
-                              blurRadius: _glowAnimation.value,
-                              spreadRadius: _glowAnimation.value / 2,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.favorite_rounded,
-                          color: Colors.redAccent.withValues(alpha: 0.8 + (0.2 * _pulseController.value)),
-                          size: 80,
-                        ),
-                      ),
-                    );
-                  },
+        color: isDarkMode ? Colors.black : Colors.white,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.05,
+                child: Image.network(
+                  'https://www.transparenttextures.com/patterns/carbon-fibre.png',
+                  repeat: ImageRepeat.repeat,
                 ),
-                const SizedBox(height: 30),
-                Text(
-                  'Enjoying Advanced Notepad?',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: isDarkMode ? Colors.white : Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Your support helps us maintain and improve the app. We accept donations via multiple crypto networks.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    color: isDarkMode ? Colors.white70 : Colors.black87,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 40),
-
-                // Networks Grid
-                Wrap(
-                  spacing: 20,
-                  runSpacing: 24,
-                  alignment: WrapAlignment.center,
-                  children: networks
-                      .map((net) => _buildTokenIcon(
-                          net['name'], net['symbol'], net['color'], net['logo'], isDarkMode))
-                      .toList(),
-                ),
-
-                const SizedBox(height: 40),
-
-                // Wallet Address Card (Glassmorphism)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: isDarkMode ? 0.05 : 0.02),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: isDarkMode ? 0.15 : 0.1),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.account_balance_wallet_rounded,
-                                  color: isDarkMode ? Colors.blueAccent : Colors.blue, size: 24),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Wallet Address',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDarkMode ? Colors.white : Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: (isDarkMode ? Colors.black : Colors.white).withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    cryptoAddress,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 13,
-                                      color: isDarkMode ? Colors.white : Colors.black,
-                                      letterSpacing: 0.5,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.copy_rounded,
-                                      color: isDarkMode ? Colors.white70 : Colors.black54, size: 20),
-                                  onPressed: () {
-                                    Clipboard.setData(const ClipboardData(text: cryptoAddress));
-                                    HapticFeedback.lightImpact();
-                                    Get.snackbar(
-                                      'Copied!',
-                                      'Wallet Address copied to clipboard',
-                                      snackPosition: SnackPosition.BOTTOM,
-                                      backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
-                                      colorText: colorScheme.onSurface,
-                                      margin: const EdgeInsets.all(16),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          Row(
-                            children: [
-                              Icon(Icons.qr_code_2_rounded,
-                                  color: isDarkMode ? Colors.orangeAccent : Colors.orange, size: 24),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Binance ID',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDarkMode ? Colors.white : Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: (isDarkMode ? Colors.black : Colors.white).withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    binanceId,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: isDarkMode ? Colors.white : Colors.black,
-                                      letterSpacing: 2,
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.copy_rounded,
-                                      color: isDarkMode ? Colors.white70 : Colors.black54, size: 20),
-                                  onPressed: () {
-                                    Clipboard.setData(const ClipboardData(text: binanceId));
-                                    HapticFeedback.lightImpact();
-                                    Get.snackbar(
-                                      'Copied!',
-                                      'Binance ID copied to clipboard',
-                                      snackPosition: SnackPosition.BOTTOM,
-                                      backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
-                                      colorText: colorScheme.onSurface,
-                                      margin: const EdgeInsets.all(16),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // Why Support Us Section
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            ),
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                child: Column(
                   children: [
+                    const SizedBox(height: 20),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        RotationTransition(
+                          turns: _rotationController,
+                          child: Container(
+                            width: 140,
+                            height: 140,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: SweepGradient(
+                                colors: [
+                                  Colors.black,
+                                  Colors.grey,
+                                  Colors.white,
+                                  Colors.grey,
+                                  Colors.black,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: 130,
+                          height: 130,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDarkMode ? Colors.black : Colors.white,
+                          ),
+                        ),
+                        AnimatedBuilder(
+                          animation: _pulseController,
+                          builder: (context, child) {
+                            return Transform.scale(
+                              scale: _scaleAnimation.value,
+                              child: Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.1),
+                                      blurRadius: _glowAnimation.value,
+                                      spreadRadius: _glowAnimation.value / 4,
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.favorite_rounded,
+                                  color: isDarkMode ? Colors.white : Colors.black,
+                                  size: 60,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 40),
                     Text(
-                      'Why Support Us?',
+                      'FUEL THE INNOVATION',
+                      textAlign: TextAlign.center,
                       style: GoogleFonts.outfit(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
                         color: isDarkMode ? Colors.white : Colors.black,
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Your support keeps our advanced features free and open for everyone. Join us in building the next generation of note-taking.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.6),
+                        height: 1.6,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 4,
+                        mainAxisSpacing: 20,
+                        crossAxisSpacing: 20,
+                        childAspectRatio: 0.8,
+                      ),
+                      itemCount: networks.length,
+                      itemBuilder: (context, index) {
+                        return _buildMonochromeToken(networks[index], isDarkMode);
+                      },
+                    ),
+                    const SizedBox(height: 40),
+                    _buildAddressCard('WALLET ADDRESS', cryptoAddress, Icons.account_balance_wallet_rounded, isDarkMode),
                     const SizedBox(height: 20),
-                    _buildSupportPoint(
-                      Icons.update_rounded,
-                      'Regular Updates',
-                      'We constantly improve features and fix bugs.',
-                      isDarkMode,
+                    _buildAddressCard('BINANCE ID', binanceId, Icons.qr_code_scanner_rounded, isDarkMode),
+                    const SizedBox(height: 40),
+                    _buildFeaturePoints(isDarkMode),
+                    const SizedBox(height: 40),
+                    Text(
+                      'PREMIUM EXPERIENCE • ZERO ADS',
+                      style: GoogleFonts.outfit(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 4,
+                        color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.3),
+                      ),
                     ),
-                    _buildSupportPoint(
-                      Icons.security_rounded,
-                      'Privacy Focused',
-                      'No ads, no trackers, just your notes.',
-                      isDarkMode,
-                    ),
-                    _buildSupportPoint(
-                      Icons.code_rounded,
-                      'Open Source Support',
-                      'Help maintain the server and infrastructure.',
-                      isDarkMode,
-                    ),
+                    const SizedBox(height: 40),
                   ],
                 ),
-                const SizedBox(height: 40),
-                Text(
-                  'Thanks for being part of our journey!',
-                  style: GoogleFonts.outfit(
-                    fontSize: 14,
-                    fontStyle: FontStyle.italic,
-                    color: isDarkMode ? Colors.white38 : Colors.black38,
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildTokenIcon(String name, String symbol, Color color, String logoUrl, bool isDarkMode) {
+  Widget _buildMonochromeToken(Map<String, dynamic> token, bool isDarkMode) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 64,
-          height: 64,
+          width: 50,
+          height: 50,
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
             shape: BoxShape.circle,
-            border: Border.all(
-              color: color.withValues(alpha: 0.3),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.15),
-                blurRadius: 12,
-                spreadRadius: 2,
-              ),
-            ],
+            border: Border.all(color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.1)),
           ),
-          child: ClipOval(
+          child: ColorFiltered(
+            colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.saturation),
             child: CachedNetworkImage(
-              imageUrl: logoUrl,
-              width: 64,
-              height: 64,
-              fit: BoxFit.contain,
-              placeholder: (context, url) => Center(
-                child: AppLoadingWidget(
-                  size: 24,
-                ),
-              ),
-              errorWidget: (context, url, error) => Center(
-                child: Text(
-                  symbol,
-                  style: GoogleFonts.outfit(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ),
+              imageUrl: token['logo'],
+              placeholder: (context, url) => const AppLoadingWidget(size: 15),
+              errorWidget: (context, url, error) => const Icon(Icons.token_rounded),
             ),
           ),
         ),
-        const SizedBox(height: 10),
-        Text(
-          name,
-          style: GoogleFonts.outfit(
-            fontSize: 12,
-            color: isDarkMode ? Colors.white : Colors.black,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        Text(
-          '($symbol)',
-          style: GoogleFonts.outfit(
-            fontSize: 10,
-            color: isDarkMode ? Colors.white38 : Colors.black38,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
+        const SizedBox(height: 8),
+        Text(token['symbol'], style: GoogleFonts.outfit(
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          color: isDarkMode ? Colors.white70 : Colors.black87,
+        )),
       ],
     );
   }
 
-  Widget _buildSupportPoint(IconData icon, String title, String desc, bool isDarkMode) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20.0),
-      child: Row(
+  Widget _buildAddressCard(String label, String value, IconData icon, bool isDarkMode) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.1)),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: Colors.blueAccent, size: 24),
+          Row(
+            children: [
+              Icon(icon, size: 18, color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.4)),
+              const SizedBox(width: 10),
+              Text(label, style: GoogleFonts.outfit(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+                color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.4),
+              )),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isDarkMode ? Colors.white : Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  desc,
-                  style: GoogleFonts.outfit(
-                    fontSize: 14,
-                    color: isDarkMode ? Colors.white60 : Colors.black54,
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(value, style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black,
+                )),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy_rounded, size: 20),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: value));
+                  Get.snackbar('COPIED', '$label COPIED TO CLIPBOARD', 
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: isDarkMode ? Colors.white : Colors.black,
+                    colorText: isDarkMode ? Colors.black : Colors.white,
+                    margin: const EdgeInsets.all(20),
+                    borderRadius: 10,
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFeaturePoints(bool isDarkMode) {
+    final points = [
+      {'icon': Icons.bolt_rounded, 'title': 'LATEST TECH', 'desc': 'Built with cutting-edge Flutter tools.'},
+      {'icon': Icons.security_rounded, 'title': 'ULTRA SECURE', 'desc': 'Locally encrypted and cloud synced.'},
+      {'icon': Icons.palette_rounded, 'title': 'ELITE DESIGN', 'desc': 'Crafted for productivity and style.'},
+    ];
+
+    return Column(
+      children: points.map((p) => Padding(
+        padding: const EdgeInsets.only(bottom: 24),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Icon(p['icon'] as IconData, size: 24, color: isDarkMode ? Colors.white : Colors.black),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p['title'] as String, style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    letterSpacing: 1,
+                    color: isDarkMode ? Colors.white : Colors.black,
+                  )),
+                  const SizedBox(height: 4),
+                  Text(p['desc'] as String, style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.5),
+                  )),
+                ],
+              ),
+            ),
+          ],
+        ),
+      )).toList(),
     );
   }
 }

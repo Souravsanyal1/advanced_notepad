@@ -15,6 +15,7 @@ import '../models/note.dart';
 import '../controllers/note_controller.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/premium_fab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -225,63 +226,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         openColor: theme.colorScheme.surface,
         closedElevation: 0,
         closedColor: Colors.transparent,
-        closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         openBuilder: (context, action) => const EditNoteScreen(),
         closedBuilder: (context, action) {
-          return Container(
-            height: 60,
-            width: 155,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.secondary,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.35),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                  spreadRadius: -2,
-                ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: action,
-                borderRadius: BorderRadius.circular(22),
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'New Note', 
-                        style: TextStyle(
-                          color: Colors.white, 
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                          fontSize: 15,
-                        )
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          return PremiumFab(
+            onTap: action,
+            label: 'New Note',
           );
         },
       ),

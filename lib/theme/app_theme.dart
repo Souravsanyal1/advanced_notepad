@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF673AB7);
-  static const Color secondaryColor = Color(0xFFD1C4E9);
-  static const Color accentColor = Color(0xFFFF4081);
+  static const Color black = Color(0xFF000000);
+  static const Color white = Color(0xFFFFFFFF);
+  static const Color darkGray = Color(0xFF1E1E1E);
+  static const Color lightGray = Color(0xFFF5F5F5);
 
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
+        seedColor: black,
+        primary: black,
+        secondary: darkGray,
         brightness: Brightness.light,
-        surfaceContainerHighest: const Color(0xFFF3E5F5),
+        surfaceContainerHighest: Color(0xFFEEEEEE),
       ),
       textTheme: GoogleFonts.outfitTextTheme(),
       appBarTheme: AppBarTheme(
@@ -20,7 +23,7 @@ class AppTheme {
         elevation: 0,
         backgroundColor: Colors.transparent,
         titleTextStyle: GoogleFonts.outfit(
-          color: Colors.black,
+          color: black,
           fontSize: 24,
           fontWeight: FontWeight.bold,
         ),
@@ -29,16 +32,14 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+          side: BorderSide(color: black.withValues(alpha: 0.05)),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: black,
+        foregroundColor: white,
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
@@ -47,52 +48,49 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        brightness: Brightness.dark,
-        surface: const Color(0xFF0F0F12),
-        onSurface: Colors.white,
-        surfaceContainerLow: const Color(0xFF16161D),
-        surfaceContainer: const Color(0xFF1A1A21),
-        surfaceContainerHigh: const Color(0xFF212129),
-        surfaceContainerHighest: const Color(0xFF2D2D35),
-        primary: const Color(0xFFD1C4E9),
-        onPrimary: Colors.black,
-        secondary: const Color(0xFFB39DDB),
-        outline: Colors.white.withValues(alpha: 0.1),
-        outlineVariant: Colors.white.withValues(alpha: 0.05),
+      colorScheme: const ColorScheme.dark(
+        surface: Color(0xFF000000),
+        onSurface: white,
+        primary: white,
+        onPrimary: black,
+        secondary: Color(0xFF2C2C2E),
+        onSecondary: white,
+        surfaceContainerLow: Color(0xFF0A0A0A),
+        surfaceContainer: Color(0xFF121212),
+        surfaceContainerHigh: Color(0xFF1C1C1E),
+        surfaceContainerHighest: Color(0xFF2C2C2E),
+        outline: Color(0xFF3A3A3C),
+        outlineVariant: Color(0xFF2C2C2E),
       ),
-      scaffoldBackgroundColor: const Color(0xFF0F0F12),
+      scaffoldBackgroundColor: black,
       textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme).copyWith(
-        bodyLarge: GoogleFonts.outfit(color: Colors.white.withValues(alpha: 0.9)),
-        bodyMedium: GoogleFonts.outfit(color: Colors.white.withValues(alpha: 0.8)),
+        bodyLarge: GoogleFonts.outfit(color: white.withValues(alpha: 0.9)),
+        bodyMedium: GoogleFonts.outfit(color: white.withValues(alpha: 0.8)),
       ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: white),
         titleTextStyle: GoogleFonts.outfit(
-          color: Colors.white,
+          color: white,
           fontSize: 24,
           fontWeight: FontWeight.bold,
         ),
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF1A1A21),
+        color: const Color(0xFF121212),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+          side: BorderSide(color: white.withValues(alpha: 0.05)),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: const Color(0xFF673AB7),
-        foregroundColor: Colors.white,
+        backgroundColor: white,
+        foregroundColor: black,
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }

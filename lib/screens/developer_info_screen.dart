@@ -227,19 +227,21 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen>
                   ),
                 ),
                 const SizedBox(height: 24),
-                _buildInfoCard(
-                  theme,
-                  title: 'BIO',
-                  content: info.bio,
-                ),
+                _buildInfoCard(theme, title: 'BIO', content: info.bio),
                 const SizedBox(height: 24),
                 Row(
                   children: [
                     Expanded(
-                      child: _buildStatCard(theme, 'Experience', info.experience),
+                      child: _buildStatCard(
+                        theme,
+                        'Experience',
+                        info.experience,
+                      ),
                     ),
                     const SizedBox(width: 16),
-                    Expanded(child: _buildStatCard(theme, 'Projects', info.projects)),
+                    Expanded(
+                      child: _buildStatCard(theme, 'Projects', info.projects),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 40),
@@ -292,9 +294,8 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen>
                             color: theme.colorScheme.surface,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: theme.colorScheme.outlineVariant.withValues(
-                                alpha: 0.5,
-                              ),
+                              color: theme.colorScheme.outlineVariant
+                                  .withValues(alpha: 0.5),
                             ),
                             boxShadow: [
                               BoxShadow(
@@ -309,11 +310,7 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen>
                           child: Row(
                             children: [
                               const SizedBox(width: 12),
-                              FaIcon(
-                                skill.icon,
-                                color: skill.color,
-                                size: 16,
-                              ),
+                              FaIcon(skill.icon, color: skill.color, size: 16),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -367,7 +364,8 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen>
                   theme,
                   icon: FontAwesomeIcons.github,
                   label: 'GitHub',
-                  value: info.socials['github']?.replaceAll('https://', '') ?? '',
+                  value:
+                      info.socials['github']?.replaceAll('https://', '') ?? '',
                   gradient: const [Color(0xFF24292E), Color(0xFF404448)],
                   onTap: () => _launchURL(info.socials['github'] ?? ''),
                 ),
@@ -375,7 +373,9 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen>
                   theme,
                   icon: FontAwesomeIcons.globe,
                   label: 'Portfolio',
-                  value: info.socials['portfolio']?.replaceAll('https://', '') ?? '',
+                  value:
+                      info.socials['portfolio']?.replaceAll('https://', '') ??
+                      '',
                   gradient: const [Color(0xFF4285F4), Color(0xFF34A853)],
                   onTap: () => _launchURL(info.socials['portfolio'] ?? ''),
                 ),
