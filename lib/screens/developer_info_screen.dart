@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:get/get.dart';
+import '../controllers/developer_controller.dart';
 
 class DeveloperInfoScreen extends StatefulWidget {
   const DeveloperInfoScreen({super.key});
@@ -10,8 +13,11 @@ class DeveloperInfoScreen extends StatefulWidget {
   State<DeveloperInfoScreen> createState() => _DeveloperInfoScreenState();
 }
 
-class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerProviderStateMixin {
+class _DeveloperInfoScreenState extends State<DeveloperInfoScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
+  final _controller = Get.find<DeveloperController>();
+
   @override
   void initState() {
     super.initState();
@@ -25,9 +31,7 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
   }
 
   Future<void> _handleRefresh() async {
-    // Simulate a network delay
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) setState(() {});
+    await _controller.refreshData();
   }
 
   @override
@@ -58,7 +62,10 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
               ),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
+              stretchModes: const [
+                StretchMode.zoomBackground,
+                StretchMode.blurBackground,
+              ],
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -75,9 +82,21 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
                   alignment: Alignment.center,
                   children: [
                     // Moving ambient blobs for a modern look
-                    _buildAmbientBlob(theme, 160, -20, -40, Colors.white.withValues(alpha: 0.1)),
-                    _buildAmbientBlob(theme, 120, 100, 200, theme.colorScheme.secondary.withValues(alpha: 0.1)),
-                    
+                    _buildAmbientBlob(
+                      theme,
+                      160,
+                      -20,
+                      -40,
+                      Colors.white.withValues(alpha: 0.1),
+                    ),
+                    _buildAmbientBlob(
+                      theme,
+                      120,
+                      100,
+                      200,
+                      theme.colorScheme.secondary.withValues(alpha: 0.1),
+                    ),
+
                     // Static Rainbow Border
                     Container(
                       width: 160,
@@ -86,9 +105,15 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
                         shape: BoxShape.circle,
                         gradient: SweepGradient(
                           colors: [
-                            Color(0xFF833AB4), Color(0xFFC13584), Color(0xFFE1306C),
-                            Color(0xFFFD1D1D), Color(0xFFF56040), Color(0xFFF77737),
-                            Color(0xFFFCB045), Color(0xFFFFDC80), Color(0xFF833AB4),
+                            Color(0xFF833AB4),
+                            Color(0xFFC13584),
+                            Color(0xFFE1306C),
+                            Color(0xFFFD1D1D),
+                            Color(0xFFF56040),
+                            Color(0xFFF77737),
+                            Color(0xFFFCB045),
+                            Color(0xFFFFDC80),
+                            Color(0xFF833AB4),
                           ],
                         ),
                       ),
@@ -105,7 +130,7 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
                               color: Colors.black.withValues(alpha: 0.3),
                               blurRadius: 30,
                               offset: const Offset(0, 15),
-                            )
+                            ),
                           ],
                         ),
                         child: const CircleAvatar(
@@ -152,17 +177,20 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
     );
   }
 
-  Widget _buildAmbientBlob(ThemeData theme, double size, double top, double left, Color color) {
+  Widget _buildAmbientBlob(
+    ThemeData theme,
+    double size,
+    double top,
+    double left,
+    Color color,
+  ) {
     return Positioned(
       top: top,
       left: left,
       child: Container(
         width: size,
         height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-        ),
+        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
       ),
     );
   }
@@ -170,202 +198,258 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
   Widget _buildAboutTab(ThemeData theme) {
     return RefreshIndicator(
       onRefresh: _handleRefresh,
-      child: AnimationLimiter(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: AnimationConfiguration.toStaggeredList(
-            duration: const Duration(milliseconds: 500),
-            childAnimationBuilder: (widget) => SlideAnimation(
-              verticalOffset: 50.0,
-              child: FadeInAnimation(child: widget),
+      child: Obx(() {
+        final info = _controller.info;
+        return AnimationLimiter(
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            children: AnimationConfiguration.toStaggeredList(
+              duration: const Duration(milliseconds: 500),
+              childAnimationBuilder: (widget) => SlideAnimation(
+                verticalOffset: 50.0,
+                child: FadeInAnimation(child: widget),
+              ),
+              children: [
+                Text(
+                  info.name,
+                  style: GoogleFonts.outfit(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  info.title,
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _buildInfoCard(
+                  theme,
+                  title: 'BIO',
+                  content: info.bio,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(theme, 'Experience', info.experience),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildStatCard(theme, 'Projects', info.projects)),
+                  ],
+                ),
+                const SizedBox(height: 40),
+                _buildFooter(theme),
+              ],
             ),
-            children: [
-              Text(
-                'Sourav Sanyal',
-                style: GoogleFonts.outfit(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              Text(
-                'Full-Stack Flutter Developer',
-                style: GoogleFonts.outfit(
-                  fontSize: 18,
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 24),
-              _buildInfoCard(
-                theme,
-                title: 'BIO',
-                content: 'A passionate software engineer specializing in building high-performance, beautiful, and user-centric mobile applications using Flutter and Firebase. I love creating seamless experiences that delight users and solve real-world problems through clean code and modern architecture.',
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(child: _buildStatCard(theme, 'Experience', '4+ Years')),
-                  const SizedBox(width: 16),
-                  Expanded(child: _buildStatCard(theme, 'Projects', '50+')),
-                ],
-              ),
-              const SizedBox(height: 40),
-              _buildFooter(theme),
-            ],
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
   Widget _buildSkillsTab(ThemeData theme) {
-    final skills = [
-      {'name': 'Flutter', 'icon': Icons.bolt, 'color': Colors.blue},
-      {'name': 'Dart', 'icon': Icons.code, 'color': Colors.cyan},
-      {'name': 'Firebase', 'icon': Icons.cloud, 'color': Colors.orange},
-      {'name': 'Node.js', 'icon': Icons.javascript, 'color': Colors.green},
-      {'name': 'UI/UX Design', 'icon': Icons.brush, 'color': Colors.pink},
-      {'name': 'Git/GitHub', 'icon': Icons.hub, 'color': Colors.black},
-      {'name': 'REST API', 'icon': Icons.api, 'color': Colors.purple},
-      {'name': 'State Mgmt', 'icon': Icons.layers, 'color': Colors.indigo},
-    ];
-
     return RefreshIndicator(
       onRefresh: _handleRefresh,
-      child: AnimationLimiter(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            Text(
-              'Technical Expertise',
-              style: GoogleFonts.outfit(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+      child: Obx(() {
+        final skills = _controller.info.skills;
+        return AnimationLimiter(
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              Text(
+                'Technical Expertise',
+                style: GoogleFonts.outfit(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 2.5,
-              ),
-              itemCount: skills.length,
-              itemBuilder: (context, index) {
-                final skill = skills[index];
-                return AnimationConfiguration.staggeredGrid(
-                  position: index,
-                  duration: const Duration(milliseconds: 500),
-                  columnCount: 2,
-                  child: ScaleAnimation(
-                    child: FadeInAnimation(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            )
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            const SizedBox(width: 12),
-                            Icon(skill['icon'] as IconData, color: skill['color'] as Color, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                skill['name'] as String,
-                                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              const SizedBox(height: 16),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 2.5,
+                ),
+                itemCount: skills.length,
+                itemBuilder: (context, index) {
+                  final skill = skills[index];
+                  return AnimationConfiguration.staggeredGrid(
+                    position: index,
+                    duration: const Duration(milliseconds: 500),
+                    columnCount: 2,
+                    child: ScaleAnimation(
+                      child: FadeInAnimation(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant.withValues(
+                                alpha: 0.5,
                               ),
                             ),
-                          ],
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.05,
+                                ),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              const SizedBox(width: 12),
+                              FaIcon(
+                                skill.icon,
+                                color: skill.color,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  skill.name,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
   Widget _buildSocialsTab(ThemeData theme) {
     return RefreshIndicator(
       onRefresh: _handleRefresh,
-      child: AnimationLimiter(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: AnimationConfiguration.toStaggeredList(
-            duration: const Duration(milliseconds: 500),
-            childAnimationBuilder: (widget) => SlideAnimation(
-              horizontalOffset: 50.0,
-              child: FadeInAnimation(child: widget),
+      child: Obx(() {
+        final info = _controller.info;
+        return AnimationLimiter(
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            children: AnimationConfiguration.toStaggeredList(
+              duration: const Duration(milliseconds: 500),
+              childAnimationBuilder: (widget) => SlideAnimation(
+                horizontalOffset: 50.0,
+                child: FadeInAnimation(child: widget),
+              ),
+              children: [
+                _buildSocialTile(
+                  theme,
+                  icon: FontAwesomeIcons.envelope,
+                  label: 'Email',
+                  value: info.socials['email'] ?? '',
+                  gradient: const [Color(0xFFEA4335), Color(0xFFC5221F)],
+                  onTap: () => _launchURL(
+                    'mailto:${info.socials['email']}?subject=Advanced%20Notepad%20Feedback',
+                  ),
+                ),
+                _buildSocialTile(
+                  theme,
+                  icon: FontAwesomeIcons.github,
+                  label: 'GitHub',
+                  value: info.socials['github']?.replaceAll('https://', '') ?? '',
+                  gradient: const [Color(0xFF24292E), Color(0xFF404448)],
+                  onTap: () => _launchURL(info.socials['github'] ?? ''),
+                ),
+                _buildSocialTile(
+                  theme,
+                  icon: FontAwesomeIcons.globe,
+                  label: 'Portfolio',
+                  value: info.socials['portfolio']?.replaceAll('https://', '') ?? '',
+                  gradient: const [Color(0xFF4285F4), Color(0xFF34A853)],
+                  onTap: () => _launchURL(info.socials['portfolio'] ?? ''),
+                ),
+                _buildSocialTile(
+                  theme,
+                  icon: FontAwesomeIcons.whatsapp,
+                  label: 'WhatsApp',
+                  value: '+8801930191100',
+                  gradient: const [Color(0xFF25D366), Color(0xFF128C7E)],
+                  onTap: () => _launchURL(info.socials['whatsapp'] ?? ''),
+                ),
+                _buildSocialTile(
+                  theme,
+                  icon: FontAwesomeIcons.telegram,
+                  label: 'Telegram',
+                  value: 't.me/sourav_sanyal',
+                  gradient: const [Color(0xFF0088CC), Color(0xFF006699)],
+                  onTap: () => _launchURL(info.socials['telegram'] ?? ''),
+                ),
+                const SizedBox(height: 24),
+                _buildInfoCard(
+                  theme,
+                  title: 'COLLABORATION',
+                  content:
+                      'Interesed in working together? Feel free to reach out for projects, consultations, or just a tech chat! I\'m always open to discussing new ideas and opportunities.',
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.05,
+                  ),
+                ),
+              ],
             ),
-            children: [
-              _buildSocialTile(
-                theme,
-                icon: Icons.alternate_email_rounded,
-                label: 'Email',
-                value: 'sourav.sanyal.dev@gmail.com',
-                gradient: const [Color(0xFFEA4335), Color(0xFFC5221F)],
-                onTap: () => _launchURL('mailto:sourav.sanyal.dev@gmail.com?subject=Advanced%20Notepad%20Feedback'),
-              ),
-              _buildSocialTile(
-                theme,
-                icon: Icons.code_rounded,
-                label: 'GitHub',
-                value: 'github.com/Souravsanyal1',
-                gradient: const [Color(0xFF24292E), Color(0xFF404448)],
-                onTap: () => _launchURL('https://github.com/Souravsanyal1'),
-              ),
-              _buildSocialTile(
-                theme,
-                icon: Icons.language_rounded,
-                label: 'Portfolio',
-                value: 'sourav-sanyal.pro.bd',
-                gradient: const [Color(0xFF4285F4), Color(0xFF34A853)],
-                onTap: () => _launchURL('https://sourav-sanyal.pro.bd'),
-              ),
-              const SizedBox(height: 24),
-              _buildInfoCard(
-                theme,
-                title: 'COLLABORATION',
-                content: 'Interesed in working together? Feel free to reach out for projects, consultations, or just a tech chat! I\'m always open to discussing new ideas and opportunities.',
-                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.05),
-              ),
-            ],
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
-  Widget _buildInfoCard(ThemeData theme, {required String title, required String content, Color? backgroundColor}) {
+  Widget _buildInfoCard(
+    ThemeData theme, {
+    required String title,
+    required String content,
+    Color? backgroundColor,
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: backgroundColor ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        color:
+            backgroundColor ??
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: theme.textTheme.labelSmall?.copyWith(letterSpacing: 2.0, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+          Text(
+            title,
+            style: theme.textTheme.labelSmall?.copyWith(
+              letterSpacing: 2.0,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
+            ),
+          ),
           const SizedBox(height: 12),
-          Text(content, style: theme.textTheme.bodyMedium?.copyWith(height: 1.8, color: theme.colorScheme.onSurface, letterSpacing: 0.2)),
+          Text(
+            content,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              height: 1.8,
+              color: theme.colorScheme.onSurface,
+              letterSpacing: 0.2,
+            ),
+          ),
         ],
       ),
     );
@@ -377,13 +461,15 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
         boxShadow: [
           BoxShadow(
             color: theme.colorScheme.primary.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 8),
-          )
+          ),
         ],
         gradient: LinearGradient(
           colors: [
@@ -396,9 +482,22 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
       ),
       child: Column(
         children: [
-          Text(value, style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+          Text(
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(label, style: theme.textTheme.labelMedium?.copyWith(color: Colors.grey, fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -406,7 +505,7 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
 
   Widget _buildSocialTile(
     ThemeData theme, {
-    required IconData icon,
+    required dynamic icon,
     required String label,
     required String value,
     required List<Color> gradient,
@@ -422,9 +521,15 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           child: Row(
@@ -432,22 +537,42 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  gradient: LinearGradient(
+                    colors: gradient,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, size: 24, color: Colors.white),
+                child: FaIcon(icon as dynamic, size: 22, color: Colors.white),
               ),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(label, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey, fontWeight: FontWeight.w500)),
-                    Text(value, style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(
+                      label,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      value,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.colorScheme.primary.withValues(alpha: 0.5)),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+              ),
             ],
           ),
         ),
@@ -459,7 +584,10 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
     return Center(
       child: Column(
         children: [
-          Text('Crafted with passion using', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+          Text(
+            'Crafted with passion using',
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -472,7 +600,13 @@ class _DeveloperInfoScreenState extends State<DeveloperInfoScreen> with TickerPr
               children: [
                 const Icon(Icons.flash_on, size: 18, color: Color(0xFF4285F4)),
                 const SizedBox(width: 8),
-                Text('Flutter & Firebase', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+                Text(
+                  'Flutter & Firebase',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -507,14 +641,20 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => minExtent;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface.withValues(alpha: 0.95),
         border: Border(
           bottom: BorderSide(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: shrinkOffset > 0 ? 0.3 : 0.0),
+            color: theme.colorScheme.outlineVariant.withValues(
+              alpha: shrinkOffset > 0 ? 0.3 : 0.0,
+            ),
             width: 1,
           ),
         ),

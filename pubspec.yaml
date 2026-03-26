@@ -58,6 +58,8 @@ dependencies:
   upgrader: ^12.5.0
   shimmer: ^3.0.0
   flutter_spinkit: ^5.2.2
+  font_awesome_flutter: ^11.0.0
+  loading_animation_widget: 1.2.1
 
 dev_dependencies:
   flutter_test:

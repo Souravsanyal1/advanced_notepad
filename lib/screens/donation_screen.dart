@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:ui';
+import '../widgets/loading_widget.dart';
 
 class DonationScreen extends StatefulWidget {
   const DonationScreen({super.key});
@@ -423,9 +424,8 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
               height: 64,
               fit: BoxFit.contain,
               placeholder: (context, url) => Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: color.withValues(alpha: 0.5),
+                child: AppLoadingWidget(
+                  size: 24,
                 ),
               ),
               errorWidget: (context, url, error) => Center(

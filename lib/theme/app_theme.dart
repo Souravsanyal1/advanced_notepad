@@ -46,16 +46,32 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
+      brightness: Brightness.dark,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: secondaryColor,
+        seedColor: primaryColor,
         brightness: Brightness.dark,
-        surfaceContainerHighest: const Color(0xFF2D2D2D),
+        surface: const Color(0xFF0F0F12),
+        onSurface: Colors.white,
+        surfaceContainerLow: const Color(0xFF16161D),
+        surfaceContainer: const Color(0xFF1A1A21),
+        surfaceContainerHigh: const Color(0xFF212129),
+        surfaceContainerHighest: const Color(0xFF2D2D35),
+        primary: const Color(0xFFD1C4E9),
+        onPrimary: Colors.black,
+        secondary: const Color(0xFFB39DDB),
+        outline: Colors.white.withValues(alpha: 0.1),
+        outlineVariant: Colors.white.withValues(alpha: 0.05),
       ),
-      textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
+      scaffoldBackgroundColor: const Color(0xFF0F0F12),
+      textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme).copyWith(
+        bodyLarge: GoogleFonts.outfit(color: Colors.white.withValues(alpha: 0.9)),
+        bodyMedium: GoogleFonts.outfit(color: Colors.white.withValues(alpha: 0.8)),
+      ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         backgroundColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: Colors.white),
         titleTextStyle: GoogleFonts.outfit(
           color: Colors.white,
           fontSize: 24,
@@ -63,6 +79,7 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
+        color: const Color(0xFF1A1A21),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -70,8 +87,8 @@ class AppTheme {
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: secondaryColor,
-        foregroundColor: Colors.black,
+        backgroundColor: const Color(0xFF673AB7),
+        foregroundColor: Colors.white,
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),

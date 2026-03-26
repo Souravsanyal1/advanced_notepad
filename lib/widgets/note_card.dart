@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/note.dart';
+import 'loading_widget.dart';
 import 'dart:io';
 
 class NoteCard extends StatelessWidget {
@@ -51,7 +52,7 @@ class NoteCard extends StatelessWidget {
                               height: 80,
                               color: Colors.black.withValues(alpha: 0.05),
                               child: const Center(
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: AppLoadingWidget(size: 24),
                               ),
                             ),
                             errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),

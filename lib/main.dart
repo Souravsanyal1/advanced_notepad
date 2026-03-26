@@ -16,6 +16,7 @@ import 'controllers/note_controller.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
+import 'controllers/developer_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +40,7 @@ void main() async {
   Get.put(notificationService);
 
   Get.put(NoteController());
+  Get.lazyPut(() => DeveloperController());
   
   runApp(const MyApp());
 }
@@ -64,7 +66,11 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/archive', page: () => const ArchiveScreen()),
         GetPage(name: '/trash', page: () => const TrashScreen()),
         GetPage(name: '/about', page: () => const AboutScreen()),
-        GetPage(name: '/developer-info', page: () => const DeveloperInfoScreen()),
+        GetPage(
+          name: '/developer-info', 
+          page: () => const DeveloperInfoScreen(),
+          binding: BindingsBuilder(() => Get.lazyPut(() => DeveloperController())),
+        ),
         GetPage(name: '/donation', page: () => const DonationScreen()),
       ],
     ));

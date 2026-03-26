@@ -14,6 +14,7 @@ import 'package:get/get.dart';
 import '../models/note.dart';
 import '../controllers/note_controller.dart';
 import '../widgets/shimmer_widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -51,7 +52,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           _pageController.jumpToPage(index);
         }
       }
+      
+      _checkFirstRun();
     });
+  }
+
+  Future<void> _checkFirstRun() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool hasSeenInfo = prefs.getBool('has_seen_welcome_info_v1') ?? false;
+    if (!hasSeenInfo) {
+      await prefs.setBool('has_seen_welcome_info_v1', true);
+      if (mounted) {
+        Get.toNamed('/developer-info');
+      }
+    }
   }
 
 
@@ -207,26 +221,69 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
       ),
       floatingActionButton: OpenContainer(
-        transitionDuration: const Duration(milliseconds: 500),
+        transitionDuration: const Duration(milliseconds: 600),
         openColor: theme.colorScheme.surface,
-        closedElevation: 6,
-        closedColor: theme.colorScheme.primaryContainer,
-        closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        closedElevation: 0,
+        closedColor: Colors.transparent,
+        closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         openBuilder: (context, action) => const EditNoteScreen(),
-        closedBuilder: (context, action) => SizedBox(
-          height: 56,
-          width: 140,
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.add, color: theme.colorScheme.onPrimaryContainer),
-                const SizedBox(width: 8),
-                Text('New Note', style: TextStyle(color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold)),
+        closedBuilder: (context, action) {
+          return Container(
+            height: 60,
+            width: 155,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.secondary,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.35),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                  spreadRadius: -2,
+                ),
               ],
             ),
-          ),
-        ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: action,
+                borderRadius: BorderRadius.circular(22),
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text(
+                        'New Note', 
+                        style: TextStyle(
+                          color: Colors.white, 
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          fontSize: 15,
+                        )
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

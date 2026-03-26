@@ -9,6 +9,7 @@ import '../services/local_storage_service.dart';
 import '../services/theme_service.dart';
 import '../services/photo_service.dart';
 import '../controllers/note_controller.dart';
+import 'loading_widget.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -150,16 +151,17 @@ class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMix
     final theme = Theme.of(context);
 
     return Drawer(
-      backgroundColor: theme.brightness == Brightness.dark 
-          ? const Color(0xFF0D0D0D) 
-          : const Color(0xFFFBFBFF),
+      backgroundColor: theme.colorScheme.surface,
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: theme.brightness == Brightness.dark
-                ? [Colors.black, const Color(0xFF1A1A2E).withValues(alpha: 0.1)]
+                ? [
+                    theme.colorScheme.surface,
+                    theme.colorScheme.surfaceContainerLow,
+                  ]
                 : [Colors.white, const Color(0xFFF0F2F5)],
           ),
         ),
@@ -171,8 +173,8 @@ class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMix
               gradient: LinearGradient(
                 colors: theme.brightness == Brightness.dark
                     ? [
-                        const Color(0xFF141E30),
-                        const Color(0xFF243B55),
+                        theme.colorScheme.surfaceContainerHigh,
+                        theme.colorScheme.surfaceContainerHighest,
                       ]
                     : [
                         const Color(0xFFE0C3FC),
@@ -216,7 +218,7 @@ class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMix
                     height: 72,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: theme.brightness == Brightness.dark ? const Color(0xFF141E30) : Colors.white,
+                      color: theme.colorScheme.surfaceContainerHighest,
                     ),
                   ),
                   CircleAvatar(
@@ -235,7 +237,7 @@ class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMix
                   ),
                   if (_isUploadingProfile)
                     const Center(
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: AppLoadingWidget(color: Colors.white, size: 24),
                     ),
                   Positioned(
                     bottom: 2,
@@ -352,16 +354,120 @@ class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMix
 
           _buildCustomDivider(theme),
           Obx(() => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: SwitchListTile(
-              title: Text('Dark Mode', style: GoogleFonts.outfit(fontWeight: FontWeight.w500)),
-              secondary: Icon(
-                _themeService.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                color: _themeService.isDarkMode ? Colors.amber : Colors.blueGrey,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: InkWell(
+              onTap: () => _themeService.toggleTheme(),
+              borderRadius: BorderRadius.circular(16),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: _themeService.isDarkMode 
+                      ? theme.colorScheme.primaryContainer.withValues(alpha: 0.1)
+                      : theme.colorScheme.primary.withValues(alpha: 0.05),
+                  border: Border.all(
+                    color: _themeService.isDarkMode 
+                        ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                        : theme.colorScheme.primary.withValues(alpha: 0.1),
+                  ),
+                  boxShadow: [
+                    if (!_themeService.isDarkMode)
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _themeService.isDarkMode 
+                            ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                            : Colors.amber.withValues(alpha: 0.1),
+                      ),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        transitionBuilder: (child, animation) {
+                          return RotationTransition(
+                            turns: animation,
+                            child: ScaleTransition(scale: animation, child: child),
+                          );
+                        },
+                        child: Icon(
+                          _themeService.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                          key: ValueKey(_themeService.isDarkMode),
+                          color: _themeService.isDarkMode ? Colors.amber[200] : Colors.amber[600],
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Appearance',
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          Text(
+                            _themeService.isDarkMode ? 'Dark Mode Active' : 'Light Mode Active',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 44,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: _themeService.isDarkMode 
+                            ? theme.colorScheme.primary 
+                            : Colors.grey[300],
+                      ),
+                      child: Stack(
+                        children: [
+                          AnimatedPositioned(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            left: _themeService.isDarkMode ? 22 : 2,
+                            top: 2,
+                            child: Container(
+                              width: 20,
+                              height: 20,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              value: _themeService.isDarkMode,
-              onChanged: (value) => _themeService.toggleTheme(),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           )),
           _buildCustomDivider(theme),

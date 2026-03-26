@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'onboarding_screen.dart';
 import 'home_screen.dart';
+import '../widgets/loading_widget.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -95,10 +96,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 ),
               ),
               const SizedBox(height: 64),
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(isDark ? Colors.white70 : Colors.blueAccent),
-
-                strokeWidth: 2,
+              AppLoadingWidget(
+                color: isDark ? Colors.white70 : Colors.blueAccent,
+                size: 30,
               ),
             ],
           ),

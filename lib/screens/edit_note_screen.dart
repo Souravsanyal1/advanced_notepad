@@ -13,6 +13,7 @@ import '../controllers/note_controller.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:signature/signature.dart';
+import '../widgets/loading_widget.dart';
 
 class EditNoteScreen extends StatefulWidget {
   final Note? note;
@@ -403,7 +404,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                 if (_isUploading)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Center(child: CircularProgressIndicator(color: Colors.black54)),
+                    child: Center(child: AppLoadingWidget(size: 30)),
                   ),
                 if (_imageUrl != null && !_isUploading)
                   Padding(
@@ -418,7 +419,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                                   placeholder: (context, url) => Container(
                                     height: 200,
                                     color: Colors.black12,
-                                    child: const Center(child: CircularProgressIndicator()),
+                                    child: const Center(child: AppLoadingWidget(size: 30)),
                                   ),
                                   errorWidget: (context, url, error) => const Icon(Icons.error),
                                   fit: BoxFit.cover,
