@@ -157,11 +157,13 @@ class _AppDrawerState extends State<AppDrawer>
 
   void _onItemTapped(int index) {
     if (mounted) {
+      HapticFeedback.lightImpact();
+      final oldIndex = _selectedIndex.toDouble();
       setState(() {
         _selectedIndex = index;
       });
       _pillPositionAnimation = Tween<double>(
-        begin: _pillPositionAnimation.value,
+        begin: oldIndex,
         end: index.toDouble(),
       ).animate(
         CurvedAnimation(parent: _pillController, curve: Curves.elasticOut),
