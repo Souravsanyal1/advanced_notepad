@@ -13,7 +13,9 @@ import '../controllers/note_controller.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:signature/signature.dart';
+import '../theme/app_theme.dart';
 import '../widgets/loading_widget.dart';
+import 'package:pasteboard/pasteboard.dart';
 
 class EditNoteScreen extends StatefulWidget {
   final Note? note;
@@ -29,10 +31,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   final LocalStorageService _storageService = LocalStorageService();
   final PhotoService _photoService = PhotoService();
   final ImagePicker _picker = ImagePicker();
-  
+
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
-  int _selectedColor = 0xFFFFFFFF; 
+  int _selectedColor = 0xFFFFFFFF;
   bool _isPinned = false;
   bool _isFavorite = false;
   bool _isArchived = false;
@@ -50,15 +52,30 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
 
   final List<int> _colors = [
     0xFFFFFFFF, // white
-    0xFFFAFAFA, // snow
-    0xFFF5F5F5, // smoke
-    0xFFEEEEEE, // light grey
-    0xFFE0E0E0, // silver
-    0xFFBDBDBD, // grey
-    0xFF9E9E9E, // dark grey
-    0xFF757575, // charcoal
-    0xFF424242, // onyx
-    0xFF212121, // jet black
+    0xFFF28B82, // red
+    0xFFFBBC04, // orange
+    0xFFFFF475, // yellow
+    0xFFCCFF90, // green
+    0xFFA7FFEB, // teal
+    0xFFCBF0F8, // blue
+    0xFFAFCBFF, // dark blue
+    0xFFD7AEFB, // purple
+    0xFFFDCFE8, // pink
+    0xFFE6C9A8, // brown
+    0xFFE8EAED, // gray
+    0xFFF5F5DC, // beige
+    0xFFFFE4E1, // misty rose
+    0xFFE0FFFF, // light cyan
+    0xFFF0F8FF, // alice blue
+    0xFFFFFACD, // lemon chiffon
+    0xFFFFE4B5, // moccasin
+    0xFFFFDAB9, // peach puff
+    0xFFE6E6FA, // lavender
+    0xFFFFF0F5, // lavender blush
+    0xFFF0FFF0, // honeydew
+    0xFFFAF0E6, // linen
+    0xFFEDF2FB, // soft blue
+    0xFFE2F0CB, // soft lime
   ];
 
   @override
@@ -112,7 +129,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Gallery permission is required to add images.'),
+              content: const Text(
+                'Gallery permission is required to add images.',
+              ),
               action: SnackBarAction(
                 label: 'Settings',
                 onPressed: () => _photoService.openSettings(),
@@ -128,8 +147,11 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
 
       setState(() => _isUploading = true);
 
-      final String? savedPath = await _storageService.saveImage(File(image.path), 'note_images');
-      
+      final String? savedPath = await _storageService.saveImage(
+        File(image.path),
+        'note_images',
+      );
+
       if (savedPath != null) {
         setState(() {
           _imageUrl = savedPath;
@@ -144,8 +166,107 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         }
       }
     } catch (e) {
+      setState(() => _isUploading = true); // Reset state
       setState(() => _isUploading = false);
       debugPrint('Error picking/uploading image: $e');
+    }
+  }
+
+  Future<void> _copyAllContent() async {
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+    final fullText = '${title.isNotEmpty ? "$title\n\n" : ""}$content';
+
+    if (fullText.trim().isEmpty) {
+      Get.snackbar(
+        'Empty Note',
+        'Nothing to copy',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.withValues(alpha: 0.1),
+        colorText: Colors.orange,
+      );
+      return;
+    }
+
+    await Clipboard.setData(ClipboardData(text: fullText));
+    HapticFeedback.mediumImpact();
+    Get.snackbar(
+      'Copied',
+      'Note copied to clipboard',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.blue.withValues(alpha: 0.1),
+      colorText: Colors.blue,
+    );
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    try {
+      // 1. Try to paste image first
+      final imageBytes = await Pasteboard.image;
+      if (imageBytes != null) {
+        setState(() => _isUploading = true);
+        final path = await _storageService.saveImageFromBytes(
+          imageBytes,
+          'note_images',
+        );
+        if (path != null) {
+          setState(() {
+            _imageUrl = path;
+            _isUploading = false;
+          });
+          HapticFeedback.mediumImpact();
+          Get.snackbar(
+            'Pasted',
+            'Image added from clipboard',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.green.withValues(alpha: 0.1),
+            colorText: Colors.green,
+          );
+          return;
+        }
+        setState(() => _isUploading = false);
+      }
+
+      // 2. Try to paste text
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      if (data != null && data.text != null && data.text!.isNotEmpty) {
+        final currentText = _contentController.text;
+        final selection = _contentController.selection;
+
+        if (selection.isValid) {
+          final newText = currentText.replaceRange(
+            selection.start,
+            selection.end,
+            data.text!,
+          );
+          _contentController.text = newText;
+          _contentController.selection = TextSelection.collapsed(
+            offset: selection.start + data.text!.length,
+          );
+        } else {
+          _contentController.text +=
+              currentText.isEmpty ? data.text! : '\n${data.text}';
+        }
+
+        HapticFeedback.selectionClick();
+        Get.snackbar(
+          'Pasted',
+          'Text pasted from clipboard',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.blue.withValues(alpha: 0.1),
+          colorText: Colors.blue,
+        );
+      } else {
+        Get.snackbar(
+          'Nothing to paste',
+          'Clipboard is empty or contains unsupported content',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange.withValues(alpha: 0.1),
+          colorText: Colors.orange,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error pasting: $e');
     }
   }
 
@@ -183,7 +304,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       );
       await _noteController.updateNote(updatedNote);
     }
-    
+
     if (mounted) {
       setState(() {
         _isSaving = false;
@@ -232,7 +353,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         ),
       );
 
-       if (confirmed == true) {
+      if (confirmed == true) {
         await _noteController.deleteNote(widget.note!.id);
         if (mounted) Navigator.pop(context);
       }
@@ -267,7 +388,8 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       );
 
       if (confirmed == true) {
-        if (widget.note!.imageUrl != null && !widget.note!.imageUrl!.startsWith('http')) {
+        if (widget.note!.imageUrl != null &&
+            !widget.note!.imageUrl!.startsWith('http')) {
           await _storageService.deleteImage(widget.note!.imageUrl!);
         }
         await _noteController.deleteNotePermanently(widget.note!.id);
@@ -277,45 +399,67 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   }
 
   Color _getContrastColor() {
-    return Color(_selectedColor).computeLuminance() > 0.5
-        ? Colors.black87
-        : Colors.white;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final displayColor = AppTheme.getNoteColor(_selectedColor, isDarkMode);
+    return displayColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
   }
 
   Color _getHintColor() {
-    return Color(_selectedColor).computeLuminance() > 0.5
-        ? Colors.black45
-        : Colors.white70;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final displayColor = AppTheme.getNoteColor(_selectedColor, isDarkMode);
+    return displayColor.computeLuminance() > 0.5 ? Colors.black45 : Colors.white70;
   }
 
   @override
   Widget build(BuildContext context) {
     final contrastColor = _getContrastColor();
     final hintColor = _getHintColor();
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final displayColor = AppTheme.getNoteColor(_selectedColor, isDarkMode);
 
     return Scaffold(
-      backgroundColor: Color(_selectedColor),
+      backgroundColor: displayColor,
       extendBody: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: _isSaving 
-          ? Text('Saving...', style: TextStyle(color: contrastColor.withValues(alpha: 0.6), fontSize: 14))
-          : (_lastSaved.isNotEmpty ? Text('Saved at $_lastSaved', style: TextStyle(color: contrastColor.withValues(alpha: 0.6), fontSize: 14)) : null),
+        title: _isSaving
+            ? Text(
+                'Saving...',
+                style: TextStyle(
+                  color: contrastColor.withValues(alpha: 0.6),
+                  fontSize: 14,
+                ),
+              )
+            : (_lastSaved.isNotEmpty
+                  ? Text(
+                      'Saved at $_lastSaved',
+                      style: TextStyle(
+                        color: contrastColor.withValues(alpha: 0.6),
+                        fontSize: 14,
+                      ),
+                    )
+                  : null),
         leading: IconButton(
           icon: Icon(Icons.close, color: contrastColor),
           onPressed: () => Navigator.pop(context),
         ),
-         actions: _isDeleted
+        actions: _isDeleted
             ? [
                 IconButton(
-                  icon: Icon(Icons.restore_from_trash_rounded, color: contrastColor),
+                  icon: Icon(
+                    Icons.restore_from_trash_rounded,
+                    color: contrastColor,
+                  ),
                   onPressed: _restoreNote,
                   tooltip: 'Restore note',
                 ),
                 IconButton(
-                  icon: Icon(Icons.delete_forever_rounded, color: contrastColor),
+                  icon: Icon(
+                    Icons.delete_forever_rounded,
+                    color: contrastColor,
+                  ),
                   onPressed: _permanentlyDeleteNote,
                   tooltip: 'Delete permanently',
                 ),
@@ -378,17 +522,20 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: hintColor,
-                      ),
+                      ).copyWith(fontFamilyFallback: ['Hind Siliguri', 'sans-serif']),
                     ),
                     style: GoogleFonts.poppins(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: contrastColor,
-                    ),
+                    ).copyWith(fontFamilyFallback: ['Hind Siliguri', 'sans-serif']),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 4,
+                  ),
                   child: Text(
                     widget.note != null
                         ? 'Edited • ${DateFormat('MMM d, yyyy • h:mm a').format(widget.note!.updatedAt)}'
@@ -398,6 +545,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                       color: hintColor,
                       letterSpacing: 0.5,
                       fontWeight: FontWeight.w500,
+                      fontFamilyFallback: ['Hind Siliguri', 'sans-serif'],
                     ),
                   ),
                 ),
@@ -408,7 +556,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                   ),
                 if (_imageUrl != null && !_isUploading)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     child: Stack(
                       children: [
                         ClipRRect(
@@ -419,24 +570,33 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                                   placeholder: (context, url) => Container(
                                     height: 200,
                                     color: Colors.black12,
-                                    child: const Center(child: AppLoadingWidget(size: 30)),
+                                    child: const Center(
+                                      child: AppLoadingWidget(size: 30),
+                                    ),
                                   ),
-                                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
                                   fit: BoxFit.cover,
                                   width: double.infinity,
                                 )
                               : (File(_imageUrl!).existsSync()
-                                  ? Image.file(
-                                      File(_imageUrl!),
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
-                                    )
-                                  : Container(
-                                      height: 200,
-                                      color: Colors.black12,
-                                      child: const Center(child: Icon(Icons.image_not_supported)),
-                                    )),
+                                    ? Image.file(
+                                        File(_imageUrl!),
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                const Icon(Icons.error),
+                                      )
+                                    : Container(
+                                        height: 200,
+                                        color: Colors.black12,
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.image_not_supported,
+                                          ),
+                                        ),
+                                      )),
                         ),
                         Positioned(
                           top: 10,
@@ -444,9 +604,13 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                           child: CircleAvatar(
                             backgroundColor: Colors.black54,
                             child: IconButton(
-                              icon: const Icon(Icons.close, color: Colors.white),
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                              ),
                               onPressed: () async {
-                                if (_imageUrl != null && !_imageUrl!.startsWith('http')) {
+                                if (_imageUrl != null &&
+                                    !_imageUrl!.startsWith('http')) {
                                   await _storageService.deleteImage(_imageUrl!);
                                 }
                                 setState(() => _imageUrl = null);
@@ -459,13 +623,20 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                   ),
                 if (_signatureUrl != null)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 15,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.draw_rounded, size: 16, color: contrastColor.withValues(alpha: 0.5)),
+                            Icon(
+                              Icons.draw_rounded,
+                              size: 16,
+                              color: contrastColor.withValues(alpha: 0.5),
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'Signature',
@@ -486,7 +657,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                               decoration: BoxDecoration(
                                 color: contrastColor.withValues(alpha: 0.03),
                                 borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: contrastColor.withValues(alpha: 0.08), width: 1.5),
+                                border: Border.all(
+                                  color: contrastColor.withValues(alpha: 0.08),
+                                  width: 1.5,
+                                ),
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(24),
@@ -495,7 +669,8 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                                   fit: BoxFit.contain,
                                   height: 120,
                                   color: contrastColor.withValues(alpha: 0.8),
-                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(Icons.error),
                                 ),
                               ),
                             ),
@@ -505,7 +680,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                               child: GestureDetector(
                                 onTap: () async {
                                   if (_signatureUrl != null) {
-                                    await _storageService.deleteImage(_signatureUrl!);
+                                    await _storageService.deleteImage(
+                                      _signatureUrl!,
+                                    );
                                   }
                                   setState(() => _signatureUrl = null);
                                   _updateFirestoreIfExisting();
@@ -516,7 +693,11 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                                     color: Colors.red.withValues(alpha: 0.1),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.close_rounded, color: Colors.red, size: 16),
+                                  child: const Icon(
+                                    Icons.close_rounded,
+                                    color: Colors.red,
+                                    size: 16,
+                                  ),
                                 ),
                               ),
                             ),
@@ -526,7 +707,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                     ),
                   ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
                   child: TextField(
                     controller: _contentController,
                     maxLines: null,
@@ -535,28 +719,33 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                     decoration: InputDecoration(
                       hintText: 'Start writing...',
                       border: InputBorder.none,
-                      hintStyle: GoogleFonts.outfit(fontSize: 18, color: hintColor),
+                      hintStyle: GoogleFonts.outfit(
+                        fontSize: 18,
+                        color: hintColor,
+                      ).copyWith(fontFamilyFallback: ['Hind Siliguri', 'sans-serif']),
                     ),
                     style: GoogleFonts.outfit(
                       fontSize: 18,
                       height: 1.6,
                       color: contrastColor,
-                    ),
+                    ).copyWith(fontFamilyFallback: ['Hind Siliguri', 'sans-serif']),
                   ),
                 ),
               ],
             ),
           ),
-          if (!_isDeleted)
-            _buildGlassToolbar(contrastColor, hintColor),
-          
+          if (!_isDeleted) _buildGlassToolbar(contrastColor, hintColor),
+
           if (_isDeleted)
-             Positioned(
+            Positioned(
               bottom: 40,
               left: 20,
               right: 20,
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 20,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -569,7 +758,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                     Expanded(
                       child: Text(
                         'This note is in Trash.',
-                        style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -578,13 +770,15 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
             ),
         ],
       ),
-      floatingActionButton: _isDeleted ? null : FloatingActionButton.extended(
-        onPressed: _saveNote,
-        backgroundColor: contrastColor,
-        foregroundColor: Color(_selectedColor),
-        icon: const Icon(Icons.check),
-        label: const Text('Save'),
-      ),
+      floatingActionButton: _isDeleted
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _saveNote,
+              backgroundColor: contrastColor,
+              foregroundColor: displayColor,
+              icon: const Icon(Icons.check),
+              label: const Text('Save'),
+            ),
     );
   }
 
@@ -621,12 +815,16 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                           fontSize: 12,
                           color: contrastColor.withValues(alpha: 0.6),
                           fontWeight: FontWeight.w600,
+                          fontFamilyFallback: ['Hind Siliguri', 'sans-serif'],
                         ),
                       ),
                       GestureDetector(
                         onTap: () => _showColorPicker(contrastColor),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: contrastColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
@@ -639,11 +837,17 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                                 decoration: BoxDecoration(
                                   color: Color(_selectedColor),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: contrastColor.withValues(alpha: 0.2)),
+                                  border: Border.all(
+                                    color: contrastColor.withValues(alpha: 0.2),
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Icon(Icons.palette_outlined, size: 14, color: contrastColor),
+                              Icon(
+                                Icons.palette_outlined,
+                                size: 14,
+                                color: contrastColor,
+                              ),
                             ],
                           ),
                         ),
@@ -662,6 +866,18 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                       'Image',
                       contrastColor,
                       _isUploading ? null : _pickAndUploadImage,
+                    ),
+                    _buildToolbarAction(
+                      Icons.paste_rounded,
+                      'Paste',
+                      contrastColor,
+                      _pasteFromClipboard,
+                    ),
+                    _buildToolbarAction(
+                      Icons.copy_rounded,
+                      'Copy',
+                      contrastColor,
+                      _copyAllContent,
                     ),
                     _buildToolbarAction(
                       Icons.label_outline_rounded,
@@ -692,7 +908,12 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     );
   }
 
-  Widget _buildToolbarAction(IconData icon, String label, Color color, VoidCallback? onTap) {
+  Widget _buildToolbarAction(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback? onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -706,6 +927,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
               fontSize: 10,
               color: color.withValues(alpha: 0.7),
               fontWeight: FontWeight.bold,
+              fontFamilyFallback: ['Hind Siliguri', 'sans-serif'],
             ),
           ),
         ],
@@ -722,59 +944,95 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 20,
+              spreadRadius: 5,
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Choose Color',
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Icon(Icons.palette_rounded, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 12),
+                Text(
+                  'Canvas Color',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ).copyWith(fontFamilyFallback: ['Hind Siliguri', 'sans-serif']),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _colors.map((colorValue) {
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 70,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _colors.length,
+                itemBuilder: (context, index) {
+                  final colorValue = _colors[index];
                   final isSelected = _selectedColor == colorValue;
+                  final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+                  final displayColor = AppTheme.getNoteColor(colorValue, isDarkMode);
+                  final isDark = displayColor.computeLuminance() < 0.3;
+
                   return GestureDetector(
                     onTap: () {
+                      HapticFeedback.lightImpact();
                       setState(() => _selectedColor = colorValue);
                       Navigator.pop(context);
                     },
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 50,
-                      height: 50,
+                      duration: const Duration(milliseconds: 300),
+                      width: 58,
+                      height: 58,
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
-                        color: Color(colorValue),
+                        color: displayColor,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isSelected ? Colors.blue : Colors.black12,
+                          color: isSelected
+                              ? Theme.of(context).primaryColor
+                              : isDark
+                                  ? Colors.white24
+                                  : Colors.black12,
                           width: isSelected ? 3 : 1,
                         ),
                         boxShadow: [
                           if (isSelected)
                             BoxShadow(
-                              color: Colors.blue.withValues(alpha: 0.2),
-                              blurRadius: 10,
+                              color: Theme.of(context)
+                                  .primaryColor
+                                  .withValues(alpha: 0.4),
+                              blurRadius: 12,
                               spreadRadius: 2,
-                            )
+                            ),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
                         ],
                       ),
                       child: isSelected
-                          ? const Icon(Icons.check, color: Colors.blue)
+                          ? Icon(
+                              Icons.check_rounded,
+                              color: isDark ? Colors.white : Colors.black87,
+                              size: 28,
+                            )
                           : null,
                     ),
                   );
-                }).toList(),
+                },
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -810,7 +1068,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                    ),
+                    ).copyWith(fontFamilyFallback: ['Hind Siliguri', 'sans-serif']),
                   ),
                   IconButton(
                     onPressed: () async {
@@ -843,7 +1101,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                     return GestureDetector(
                       onLongPress: () {
                         HapticFeedback.heavyImpact();
-                        Navigator.pop(context); // Close label picker bottom sheet
+                        Navigator.pop(
+                          context,
+                        ); // Close label picker bottom sheet
                         _showDeleteLabelDialog(label);
                       },
                       child: FilterChip(
@@ -887,12 +1147,13 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Label name',
-          ),
+          decoration: const InputDecoration(hintText: 'Label name'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
             child: const Text('Create'),
@@ -929,7 +1190,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Label'),
-        content: Text('Are you sure you want to delete the label "$labelName"? This will remove it from all notes.'),
+        content: Text(
+          'Are you sure you want to delete the label "$labelName"? This will remove it from all notes.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -956,37 +1219,44 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       ),
     );
   }
+
   void _showSignatureDialog(Color contrastColor) {
     HapticFeedback.mediumImpact();
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final displayColor = AppTheme.getNoteColor(_selectedColor, isDarkMode);
+
     // Re-initialize controller with correct color to avoid final field error
     _sigController = SignatureController(
       penStrokeWidth: 3,
       penColor: contrastColor.withValues(alpha: 0.8),
       exportBackgroundColor: Colors.transparent,
     );
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: AlertDialog(
-          backgroundColor: Color(_selectedColor).withValues(alpha: 0.95),
+          backgroundColor: displayColor.withValues(alpha: 0.95),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
-            side: BorderSide(color: contrastColor.withValues(alpha: 0.1), width: 1.5),
+            side: BorderSide(
+              color: contrastColor.withValues(alpha: 0.1),
+              width: 1.5,
+            ),
           ),
           title: Row(
             children: [
               Icon(Icons.draw_rounded, color: contrastColor),
               const SizedBox(width: 12),
               Text(
-                'Add Signature', 
+                'Add Signature',
                 style: GoogleFonts.poppins(
                   color: contrastColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
-                ),
+                ).copyWith(fontFamilyFallback: ['Hind Siliguri', 'sans-serif']),
               ),
             ],
           ),
@@ -998,7 +1268,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                 width: double.maxFinite,
                 decoration: BoxDecoration(
                   color: contrastColor.withValues(alpha: 0.05),
-                  border: Border.all(color: contrastColor.withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: contrastColor.withValues(alpha: 0.2),
+                  ),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: ClipRRect(
@@ -1013,9 +1285,19 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildSigAction(Icons.undo, 'Undo', contrastColor, () => _sigController.undo()),
+                  _buildSigAction(
+                    Icons.undo,
+                    'Undo',
+                    contrastColor,
+                    () => _sigController.undo(),
+                  ),
                   const SizedBox(width: 24),
-                  _buildSigAction(Icons.clear, 'Clear', contrastColor, () => _sigController.clear()),
+                  _buildSigAction(
+                    Icons.clear,
+                    'Clear',
+                    contrastColor,
+                    () => _sigController.clear(),
+                  ),
                 ],
               ),
             ],
@@ -1027,7 +1309,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                 Navigator.pop(context);
               },
               child: Text(
-                'Cancel', 
+                'Cancel',
                 style: GoogleFonts.poppins(
                   color: contrastColor.withValues(alpha: 0.6),
                   fontWeight: FontWeight.w500,
@@ -1039,7 +1321,10 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                 if (_sigController.isNotEmpty) {
                   final Uint8List? data = await _sigController.toPngBytes();
                   if (data != null) {
-                    final path = await _storageService.saveImageFromBytes(data, 'signatures');
+                    final path = await _storageService.saveImageFromBytes(
+                      data,
+                      'signatures',
+                    );
                     if (mounted) {
                       setState(() {
                         _signatureUrl = path;
@@ -1055,8 +1340,13 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                 backgroundColor: contrastColor,
                 foregroundColor: Color(_selectedColor),
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: Text(
                 'Save Signature',
@@ -1069,7 +1359,12 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     );
   }
 
-  Widget _buildSigAction(IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _buildSigAction(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

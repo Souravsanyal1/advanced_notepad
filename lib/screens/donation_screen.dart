@@ -57,14 +57,47 @@ class _DonationScreenState extends State<DonationScreen>
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     final List<Map<String, dynamic>> networks = [
-      {'name': 'BSC', 'symbol': 'BNB', 'logo': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=040'},
-      {'name': 'Optimism', 'symbol': 'OP', 'logo': 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.png?v=040'},
-      {'name': 'Ethereum', 'symbol': 'ETH', 'logo': 'https://cryptologos.cc/logos/ethereum-eth-logo.png?v=040'},
-      {'name': 'Aptos', 'symbol': 'APT', 'logo': 'https://cryptologos.cc/logos/aptos-apt-logo.png?v=040'},
-      {'name': 'Polygon', 'symbol': 'POL', 'logo': 'https://cryptologos.cc/logos/polygon-matic-logo.png?v=040'},
-      {'name': 'Solana', 'symbol': 'SOL', 'logo': 'https://cryptologos.cc/logos/solana-sol-logo.png?v=040'},
-      {'name': 'opBNB', 'symbol': 'BNB', 'logo': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=040'},
-      {'name': 'Arbitrum', 'symbol': 'ARB', 'logo': 'https://cryptologos.cc/logos/arbitrum-arb-logo.png?v=040'},
+      {
+        'name': 'BSC',
+        'symbol': 'BNB',
+        'logo': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=040',
+      },
+      {
+        'name': 'Optimism',
+        'symbol': 'OP',
+        'logo':
+            'https://cryptologos.cc/logos/optimism-ethereum-op-logo.png?v=040',
+      },
+      {
+        'name': 'Ethereum',
+        'symbol': 'ETH',
+        'logo': 'https://cryptologos.cc/logos/ethereum-eth-logo.png?v=040',
+      },
+      {
+        'name': 'Aptos',
+        'symbol': 'APT',
+        'logo': 'https://cryptologos.cc/logos/aptos-apt-logo.png?v=040',
+      },
+      {
+        'name': 'Polygon',
+        'symbol': 'POL',
+        'logo': 'https://cryptologos.cc/logos/polygon-matic-logo.png?v=040',
+      },
+      {
+        'name': 'Solana',
+        'symbol': 'SOL',
+        'logo': 'https://cryptologos.cc/logos/solana-sol-logo.png?v=040',
+      },
+      {
+        'name': 'opBNB',
+        'symbol': 'BNB',
+        'logo': 'https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=040',
+      },
+      {
+        'name': 'Arbitrum',
+        'symbol': 'ARB',
+        'logo': 'https://cryptologos.cc/logos/arbitrum-arb-logo.png?v=040',
+      },
     ];
 
     return Scaffold(
@@ -73,14 +106,20 @@ class _DonationScreenState extends State<DonationScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: isDarkMode ? Colors.white : Colors.black),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
           onPressed: () => Get.back(),
         ),
-        title: Text('SUPPORT US', style: GoogleFonts.outfit(
-          color: isDarkMode ? Colors.white : Colors.black,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 2,
-        )),
+        title: Text(
+          'SUPPORT US',
+          style: GoogleFonts.outfit(
+            color: isDarkMode ? Colors.white : Colors.black,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2,
+          ),
+        ),
       ),
       body: Container(
         width: double.infinity,
@@ -99,7 +138,10 @@ class _DonationScreenState extends State<DonationScreen>
             ),
             SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 20.0,
+                ),
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
@@ -115,11 +157,11 @@ class _DonationScreenState extends State<DonationScreen>
                               shape: BoxShape.circle,
                               gradient: SweepGradient(
                                 colors: [
-                                  Colors.black,
-                                  Colors.grey,
-                                  Colors.white,
-                                  Colors.grey,
-                                  Colors.black,
+                                  Colors.indigoAccent,
+                                  Colors.deepPurpleAccent,
+                                  Colors.pinkAccent,
+                                  Colors.redAccent,
+                                  Colors.indigoAccent,
                                 ],
                               ),
                             ),
@@ -142,18 +184,24 @@ class _DonationScreenState extends State<DonationScreen>
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                                  color:
+                                      (isDarkMode ? Colors.white : Colors.black)
+                                          .withValues(alpha: 0.05),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.1),
+                                      color:
+                                          (isDarkMode
+                                                  ? Colors.white
+                                                  : Colors.black)
+                                              .withValues(alpha: 0.1),
                                       blurRadius: _glowAnimation.value,
                                       spreadRadius: _glowAnimation.value / 4,
                                     ),
                                   ],
                                 ),
-                                child: Icon(
+                                child: const Icon(
                                   Icons.favorite_rounded,
-                                  color: isDarkMode ? Colors.white : Colors.black,
+                                  color: Colors.redAccent,
                                   size: 60,
                                 ),
                               ),
@@ -179,7 +227,8 @@ class _DonationScreenState extends State<DonationScreen>
                       textAlign: TextAlign.center,
                       style: GoogleFonts.outfit(
                         fontSize: 14,
-                        color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.6),
+                        color: (isDarkMode ? Colors.white : Colors.black)
+                            .withValues(alpha: 0.6),
                         height: 1.6,
                       ),
                     ),
@@ -187,21 +236,35 @@ class _DonationScreenState extends State<DonationScreen>
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        mainAxisSpacing: 20,
-                        crossAxisSpacing: 20,
-                        childAspectRatio: 0.8,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            mainAxisSpacing: 20,
+                            crossAxisSpacing: 20,
+                            childAspectRatio: 0.8,
+                          ),
                       itemCount: networks.length,
                       itemBuilder: (context, index) {
-                        return _buildMonochromeToken(networks[index], isDarkMode);
+                        return _buildMonochromeToken(
+                          networks[index],
+                          isDarkMode,
+                        );
                       },
                     ),
                     const SizedBox(height: 40),
-                    _buildAddressCard('WALLET ADDRESS', cryptoAddress, Icons.account_balance_wallet_rounded, isDarkMode),
+                    _buildAddressCard(
+                      'WALLET ADDRESS',
+                      cryptoAddress,
+                      Icons.account_balance_wallet_rounded,
+                      isDarkMode,
+                    ),
                     const SizedBox(height: 20),
-                    _buildAddressCard('BINANCE ID', binanceId, Icons.qr_code_scanner_rounded, isDarkMode),
+                    _buildAddressCard(
+                      'BINANCE ID',
+                      binanceId,
+                      Icons.qr_code_scanner_rounded,
+                      isDarkMode,
+                    ),
                     const SizedBox(height: 40),
                     _buildFeaturePoints(isDarkMode),
                     const SizedBox(height: 40),
@@ -211,7 +274,8 @@ class _DonationScreenState extends State<DonationScreen>
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 4,
-                        color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.3),
+                        color: (isDarkMode ? Colors.white : Colors.black)
+                            .withValues(alpha: 0.3),
                       ),
                     ),
                     const SizedBox(height: 40),
@@ -234,70 +298,97 @@ class _DonationScreenState extends State<DonationScreen>
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.1)),
+            border: Border.all(
+              color: (isDarkMode ? Colors.white : Colors.black).withValues(
+                alpha: 0.1,
+              ),
+            ),
           ),
-          child: ColorFiltered(
-            colorFilter: const ColorFilter.matrix(<double>[
-              0.2126, 0.7152, 0.0722, 0, 0,
-              0.2126, 0.7152, 0.0722, 0, 0,
-              0.2126, 0.7152, 0.0722, 0, 0,
-              0,      0,      0,      1, 0,
-            ]),
             child: CachedNetworkImage(
               imageUrl: token['logo'],
               placeholder: (context, url) => const AppLoadingWidget(size: 15),
-              errorWidget: (context, url, error) => const Icon(Icons.token_rounded),
+              errorWidget: (context, url, error) =>
+                  const Icon(Icons.token_rounded),
             ),
-          ),
         ),
         const SizedBox(height: 8),
-        Text(token['symbol'], style: GoogleFonts.outfit(
-          fontSize: 10,
-          fontWeight: FontWeight.w900,
-          color: isDarkMode ? Colors.white70 : Colors.black87,
-        )),
+        Text(
+          token['symbol'],
+          style: GoogleFonts.outfit(
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            color: isDarkMode ? Colors.white70 : Colors.black87,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildAddressCard(String label, String value, IconData icon, bool isDarkMode) {
+  Widget _buildAddressCard(
+    String label,
+    String value,
+    IconData icon,
+    bool isDarkMode,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.05),
+        color: (isDarkMode ? Colors.white : Colors.black).withValues(
+          alpha: 0.05,
+        ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.1)),
+        border: Border.all(
+          color: (isDarkMode ? Colors.white : Colors.black).withValues(
+            alpha: 0.1,
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.4)),
+              Icon(
+                icon,
+                size: 18,
+                color: (isDarkMode ? Colors.white : Colors.black).withValues(
+                  alpha: 0.4,
+                ),
+              ),
               const SizedBox(width: 10),
-              Text(label, style: GoogleFonts.outfit(
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-                color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.4),
-              )),
+              Text(
+                label,
+                style: GoogleFonts.outfit(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                  color: (isDarkMode ? Colors.white : Colors.black).withValues(
+                    alpha: 0.4,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: Text(value, style: GoogleFonts.outfit(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black,
-                )),
+                child: Text(
+                  value,
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.black,
+                  ),
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.copy_rounded, size: 20),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: value));
-                  Get.snackbar('COPIED', '$label COPIED TO CLIPBOARD', 
+                  Get.snackbar(
+                    'COPIED',
+                    '$label COPIED TO CLIPBOARD',
                     snackPosition: SnackPosition.BOTTOM,
                     backgroundColor: isDarkMode ? Colors.white : Colors.black,
                     colorText: isDarkMode ? Colors.black : Colors.white,
@@ -315,46 +406,74 @@ class _DonationScreenState extends State<DonationScreen>
 
   Widget _buildFeaturePoints(bool isDarkMode) {
     final points = [
-      {'icon': Icons.bolt_rounded, 'title': 'LATEST TECH', 'desc': 'Built with cutting-edge Flutter tools.'},
-      {'icon': Icons.security_rounded, 'title': 'ULTRA SECURE', 'desc': 'Locally encrypted and cloud synced.'},
-      {'icon': Icons.palette_rounded, 'title': 'ELITE DESIGN', 'desc': 'Crafted for productivity and style.'},
+      {
+        'icon': Icons.bolt_rounded,
+        'title': 'LATEST TECH',
+        'desc': 'Built with cutting-edge Flutter tools.',
+      },
+      {
+        'icon': Icons.security_rounded,
+        'title': 'ULTRA SECURE',
+        'desc': 'Locally encrypted and cloud synced.',
+      },
+      {
+        'icon': Icons.palette_rounded,
+        'title': 'ELITE DESIGN',
+        'desc': 'Crafted for productivity and style.',
+      },
     ];
 
     return Column(
-      children: points.map((p) => Padding(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Icon(p['icon'] as IconData, size: 24, color: isDarkMode ? Colors.white : Colors.black),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      children: points
+          .map(
+            (p) => Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Row(
                 children: [
-                  Text(p['title'] as String, style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                    letterSpacing: 1,
-                    color: isDarkMode ? Colors.white : Colors.black,
-                  )),
-                  const SizedBox(height: 4),
-                  Text(p['desc'] as String, style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: 0.5),
-                  )),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: (isDarkMode ? Colors.white : Colors.black)
+                          .withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Icon(
+                      p['icon'] as IconData,
+                      size: 24,
+                      color: isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          p['title'] as String,
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            letterSpacing: 1,
+                            color: isDarkMode ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          p['desc'] as String,
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            color: (isDarkMode ? Colors.white : Colors.black)
+                                .withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
-      )).toList(),
+          )
+          .toList(),
     );
   }
 }

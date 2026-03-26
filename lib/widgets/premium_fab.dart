@@ -67,11 +67,10 @@ class _PremiumFabState extends State<PremiumFab> with TickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(32),
                   gradient: const SweepGradient(
                     colors: [
-                      Color(0xFF000000),
-                      Color(0xFF666666),
-                      Color(0xFFFFFFFF),
-                      Color(0xFF666666),
-                      Color(0xFF000000),
+                      Color(0xFF00ACC1),
+                      Color(0xFF8E24AA),
+                      Color(0xFF0D1B3E),
+                      Color(0xFF00ACC1),
                     ],
                   ),
                 ),
@@ -87,8 +86,8 @@ class _PremiumFabState extends State<PremiumFab> with TickerProviderStateMixin {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: isDark
-                      ? [const Color(0xFF1A1A1A), const Color(0xFF000000)]
-                      : [const Color(0xFFFFFFFF), const Color(0xFFE5E5E5)],
+                      ? [const Color(0xFF152248), const Color(0xFF0D1B3E)]
+                      : [const Color(0xFFFFFFFF), const Color(0xFFF1F5F9)],
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -99,8 +98,10 @@ class _PremiumFabState extends State<PremiumFab> with TickerProviderStateMixin {
                   ),
                 ],
                 border: Border.all(
-                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
-                  width: 1,
+                  color: isDark 
+                      ? const Color(0xFF00ACC1).withValues(alpha: 0.3)
+                      : const Color(0xFF0D1B3E).withValues(alpha: 0.2),
+                  width: 1.5,
                 ),
               ),
               child: ClipRRect(
@@ -130,7 +131,7 @@ class _PremiumFabState extends State<PremiumFab> with TickerProviderStateMixin {
                             widget.label.toUpperCase(),
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black,
+                              color: isDark ? Colors.white : const Color(0xFF0D1B3E),
                               fontWeight: FontWeight.w900,
                               letterSpacing: 2.0,
                               fontSize: 13,

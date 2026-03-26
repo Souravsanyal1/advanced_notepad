@@ -24,11 +24,13 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   final NoteController _noteController = Get.find<NoteController>();
   final ProfileService _profileService = ProfileService();
-  final PageController _pageController = PageController();
   final ScrollController _labelScrollController = ScrollController();
+  late PageController _pageController;
+  bool _isAnimatingToPage = false;
   final RxString _searchQuery = ''.obs;
   String? _profileImageUrl;
 
@@ -41,19 +43,31 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     _profileService.addListener(_loadProfile);
     _loadProfile();
-    
+
+    // Initialize PageController with the current selection
+    final labels = ['All', ..._noteController.labels];
+    final selectedLabel = _noteController.selectedLabel.value;
+    final initialPage = (selectedLabel.isEmpty) 
+        ? 0 
+        : labels.indexOf(selectedLabel);
+    _pageController = PageController(initialPage: initialPage != -1 ? initialPage : 0);
+
     // Check for arguments and set selected label
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final String? routeLabel = ModalRoute.of(context)?.settings.arguments as String?;
+      final String? routeLabel =
+          ModalRoute.of(context)?.settings.arguments as String?;
       if (routeLabel != null) {
         _noteController.setSelectedLabel(routeLabel);
         final labels = ['All', ..._noteController.labels];
         final index = labels.indexOf(routeLabel);
         if (index != -1) {
-          _pageController.jumpToPage(index);
+          _scrollToLabel(index);
+          if (_pageController.hasClients) {
+            _pageController.jumpToPage(index);
+          }
         }
       }
-      
+
       _checkFirstRun();
     });
   }
@@ -69,13 +83,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-
-
   @override
   void dispose() {
     _profileService.removeListener(_loadProfile);
-    _pageController.dispose();
     _labelScrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -89,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       drawer: const AppDrawer(),
       body: UpgradeAlert(
@@ -99,24 +111,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         child: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
             SliverAppBar(
-              title: Obx(() => Text(
-                _noteController.selectedLabel.value.isEmpty ? 'My Notes' : _noteController.selectedLabel.value, 
-                style: const TextStyle(fontWeight: FontWeight.bold)
-              )),
+              title: Obx(
+                () => Text(
+                  _noteController.selectedLabel.value.isEmpty
+                      ? 'My Notes'
+                      : _noteController.selectedLabel.value,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
               floating: true,
               snap: true,
               pinned: true,
               elevation: innerBoxIsScrolled ? 4 : 0,
               forceElevated: innerBoxIsScrolled,
-              leading: Obx(() => _noteController.selectedLabel.value.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => _noteController.setSelectedLabel(null),
-                  )
-                : IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                )),
+              leading: IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.tune),
@@ -129,11 +140,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     shape: BoxShape.circle,
                     gradient: SweepGradient(
                       colors: [
-                        Colors.white,
-                        Colors.grey,
-                        Colors.black,
-                        Colors.grey,
-                        Colors.white,
+                        Color(0xFF00ACC1),
+                        Color(0xFF8E24AA),
+                        Color(0xFF0D1B3E),
+                        Color(0xFF00ACC1),
                       ],
                     ),
                   ),
@@ -141,8 +151,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     radius: 16,
                     backgroundImage: _profileImageUrl != null
                         ? (_profileImageUrl!.startsWith('http')
-                            ? CachedNetworkImageProvider(_profileImageUrl!)
-                            : FileImage(File(_profileImageUrl!)) as ImageProvider)
+                              ? CachedNetworkImageProvider(_profileImageUrl!)
+                              : FileImage(File(_profileImageUrl!))
+                                    as ImageProvider)
                         : null,
                     child: _profileImageUrl == null
                         ? const Icon(Icons.person, size: 20)
@@ -159,7 +170,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     decoration: BoxDecoration(
                       color: theme.brightness == Brightness.dark
                           ? Colors.black.withValues(alpha: 0.3)
-                          : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                          : theme.colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: theme.brightness == Brightness.dark
@@ -179,7 +191,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         hintText: 'Search notes...',
                         prefixIcon: Icon(Icons.search, color: Colors.grey),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
                       onChanged: (value) => _searchQuery.value = value,
                     ),
@@ -187,26 +202,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: _buildLabelSelector(theme),
-            ),
+            SliverToBoxAdapter(child: _buildLabelSelector(theme)),
           ],
           body: Obx(() {
-            final categories = ['All', ..._noteController.labels];
+            // Only rebuild PageView if labels list changes
+            final labels = ['All', ..._noteController.labels];
             
             return PageView.builder(
               controller: _pageController,
+              itemCount: labels.length,
               onPageChanged: (index) {
-                HapticFeedback.selectionClick();
-                final label = categories[index];
-                _noteController.setSelectedLabel(label == 'All' ? null : label);
+                final label = labels[index] == 'All' ? null : labels[index];
                 
-                // Keep label selector in sync
-                _scrollToLabel(index);
+                // Only update if not currently animating from a tap
+                // OR if we reached the target page of the animation
+                if (!_isAnimatingToPage) {
+                  if (_noteController.selectedLabel.value != (label ?? '')) {
+                    HapticFeedback.selectionClick();
+                    _noteController.setSelectedLabel(label);
+                    _scrollToLabel(index);
+                  }
+                }
               },
-              itemCount: categories.length,
               itemBuilder: (context, index) {
-                final currentLabel = categories[index];
+                final currentLabel = labels[index];
                 return RefreshIndicator(
                   onRefresh: () async {
                     HapticFeedback.mediumImpact();
@@ -224,13 +243,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         openColor: theme.colorScheme.surface,
         closedElevation: 0,
         closedColor: Colors.transparent,
-        closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        closedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
+        ),
         openBuilder: (context, action) => const EditNoteScreen(),
         closedBuilder: (context, action) {
-          return PremiumFab(
-            onTap: action,
-            label: 'New Note',
-          );
+          return PremiumFab(onTap: action, label: 'New Note');
         },
       ),
     );
@@ -243,17 +261,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       }
 
       // Filter notes based on both the PageView's currentLabel AND the search query
-      // Note: _noteController.filteredNotes already accounts for selectedLabel, 
+      // Note: _noteController.filteredNotes already accounts for selectedLabel,
       // but since we are in a PageView, we want to show notes for 'currentLabel'
       final allNotesForCategory = _noteController.allNotes.where((note) {
         if (currentLabel == 'All') return !note.isDeleted && !note.isArchived;
-        return note.labels.contains(currentLabel) && !note.isDeleted && !note.isArchived;
+        return note.labels.contains(currentLabel) &&
+            !note.isDeleted &&
+            !note.isArchived;
       }).toList();
 
       final notes = allNotesForCategory.where((note) {
         if (_searchQuery.value.isEmpty) return true;
-        return note.title.toLowerCase().contains(_searchQuery.value.toLowerCase()) ||
-            note.content.toLowerCase().contains(_searchQuery.value.toLowerCase());
+        return note.title.toLowerCase().contains(
+              _searchQuery.value.toLowerCase(),
+            ) ||
+            note.content.toLowerCase().contains(
+              _searchQuery.value.toLowerCase(),
+            );
       }).toList();
 
       if (notes.isEmpty) {
@@ -268,20 +292,34 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      color: theme.colorScheme.primaryContainer.withValues(
+                        alpha: 0.3,
+                      ),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.edit_note_rounded, size: 80, color: theme.colorScheme.primary),
+                    child: Icon(
+                      Icons.edit_note_rounded,
+                      size: 80,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    _searchQuery.value.isEmpty ? 'Begin your journey' : 'No matches found',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    _searchQuery.value.isEmpty
+                        ? 'Begin your journey'
+                        : 'No matches found',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _searchQuery.value.isEmpty ? 'Tap the button below to create a note' : 'Try a different keyword',
-                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                    _searchQuery.value.isEmpty
+                        ? 'Tap the button below to create a note'
+                        : 'Try a different keyword',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey,
+                    ),
                   ),
                 ],
               ),
@@ -301,7 +339,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               const SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Text('PINNED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
+                  child: Text(
+                    'PINNED',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: Colors.grey,
+                    ),
+                  ),
                 ),
               ),
               SliverPadding(
@@ -320,15 +366,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       child: ScaleAnimation(
                         child: FadeInAnimation(
                           child: OpenContainer(
-                            transitionDuration: const Duration(milliseconds: 500),
+                            transitionDuration: const Duration(
+                              milliseconds: 500,
+                            ),
                             openColor: Color(note.color),
                             closedColor: Colors.transparent,
                             closedElevation: 0,
                             openElevation: 0,
-                            closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                            openBuilder: (context, action) => EditNoteScreen(note: note),
+                            closedShape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            openBuilder: (context, action) =>
+                                EditNoteScreen(note: note),
                             closedBuilder: (context, action) => NoteCard(
-                              note: note, 
+                              note: note,
                               onTap: action,
                               onLongPress: () {
                                 HapticFeedback.mediumImpact();
@@ -347,7 +398,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               const SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-                  child: Text('OTHERS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
+                  child: Text(
+                    'OTHERS',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: Colors.grey,
+                    ),
+                  ),
                 ),
               ),
               SliverPadding(
@@ -368,15 +427,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         verticalOffset: 50.0,
                         child: FadeInAnimation(
                           child: OpenContainer(
-                            transitionDuration: const Duration(milliseconds: 500),
+                            transitionDuration: const Duration(
+                              milliseconds: 500,
+                            ),
                             openColor: Color(note.color),
                             closedColor: Colors.transparent,
                             closedElevation: 0,
                             openElevation: 0,
-                            closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                            openBuilder: (context, action) => EditNoteScreen(note: note),
+                            closedShape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            openBuilder: (context, action) =>
+                                EditNoteScreen(note: note),
                             closedBuilder: (context, action) => NoteCard(
-                              note: note, 
+                              note: note,
                               onTap: action,
                               onLongPress: () {
                                 HapticFeedback.mediumImpact();
@@ -431,7 +495,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: Icon(note.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+              leading: Icon(
+                note.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+              ),
               title: Text(note.isPinned ? 'Unpin' : 'Pin'),
               onTap: () {
                 Navigator.pop(context);
@@ -439,8 +505,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               },
             ),
             ListTile(
-              leading: Icon(note.isFavorite ? Icons.favorite : Icons.favorite_border),
-              title: Text(note.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'),
+              leading: Icon(
+                note.isFavorite ? Icons.favorite : Icons.favorite_border,
+              ),
+              title: Text(
+                note.isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _noteController.toggleFavorite(note);
@@ -460,16 +530,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               onTap: () {
                 Navigator.pop(context);
                 _noteController.toggleArchive(note);
-                Get.snackbar('Archived', 'Note moved to archive', snackPosition: SnackPosition.BOTTOM);
+                Get.snackbar(
+                  'Archived',
+                  'Note moved to archive',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+              leading: const Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.red,
+              ),
               title: const Text('Delete', style: TextStyle(color: Colors.red)),
               onTap: () {
                 Navigator.pop(context);
                 _noteController.moveToTrash(note);
-                Get.snackbar('Deleted', 'Note moved to trash', snackPosition: SnackPosition.BOTTOM);
+                Get.snackbar(
+                  'Deleted',
+                  'Note moved to trash',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
               },
             ),
             const SizedBox(height: 16),
@@ -489,39 +570,44 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         title: const Text('Select Labels'),
         content: SizedBox(
           width: double.maxFinite,
-          child: Obx(() => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ..._noteController.labels.map((label) {
-                final isSelected = selectedLabels.contains(label);
-                return GestureDetector(
-                  onLongPress: () {
-                    HapticFeedback.heavyImpact();
-                    Navigator.pop(context); // Close selection dialog
-                    _showDeleteLabelDialog(label);
-                  },
-                  child: CheckboxListTile(
-                    title: Text(label),
-                    value: isSelected,
-                    onChanged: (value) async {
-                      if (value == true) {
-                        selectedLabels.add(label);
-                        await _noteController.addLabelToNote(note, label);
-                      } else {
-                        selectedLabels.remove(label);
-                        await _noteController.removeLabelFromNote(note, label);
-                      }
+          child: Obx(
+            () => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ..._noteController.labels.map((label) {
+                  final isSelected = selectedLabels.contains(label);
+                  return GestureDetector(
+                    onLongPress: () {
+                      HapticFeedback.heavyImpact();
+                      Navigator.pop(context); // Close selection dialog
+                      _showDeleteLabelDialog(label);
                     },
+                    child: CheckboxListTile(
+                      title: Text(label),
+                      value: isSelected,
+                      onChanged: (value) async {
+                        if (value == true) {
+                          selectedLabels.add(label);
+                          await _noteController.addLabelToNote(note, label);
+                        } else {
+                          selectedLabels.remove(label);
+                          await _noteController.removeLabelFromNote(
+                            note,
+                            label,
+                          );
+                        }
+                      },
+                    ),
+                  );
+                }),
+                if (_noteController.labels.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text('No labels created yet.'),
                   ),
-                );
-              }),
-              if (_noteController.labels.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('No labels created yet.'),
-                ),
-            ],
-          )),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
@@ -537,7 +623,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Obx(() {
       final labels = ['All', ..._noteController.labels];
       final activeLabel = _noteController.selectedLabel.value;
-      
+
       return Container(
         height: 70,
         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -549,49 +635,76 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           itemCount: labels.length,
           itemBuilder: (context, index) {
             final label = labels[index];
-            final isSelected = (label == 'All' && activeLabel.isEmpty) || label == activeLabel;
-            
+            final isSelected =
+                (label == 'All' && activeLabel.isEmpty) || label == activeLabel;
+
             return Padding(
               padding: const EdgeInsets.only(right: 12),
               child: InkWell(
-                  onTap: () {
-                    if (!isSelected) {
-                      HapticFeedback.lightImpact();
-                      _pageController.animateToPage(
+                onTap: () {
+                  if (!isSelected) {
+                    HapticFeedback.lightImpact();
+                    _noteController.setSelectedLabel(
+                      label == 'All' ? null : label,
+                    );
+                    _scrollToLabel(index);
+                    if (_pageController.hasClients) {
+                      _isAnimatingToPage = true;
+                      _pageController
+                          .animateToPage(
                         index,
-                        duration: const Duration(milliseconds: 400),
+                        duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOut,
-                      );
-                      // selectedLabel is updated via onPageChanged
+                      )
+                          .then((_) {
+                        if (mounted) {
+                          setState(() {
+                            _isAnimatingToPage = false;
+                          });
+                        }
+                      });
                     }
-                  },
-                onLongPress: label == 'All' ? null : () {
-                  HapticFeedback.heavyImpact();
-                  _showDeleteLabelDialog(label);
+                  }
                 },
+                onLongPress: label == 'All'
+                    ? null
+                    : () {
+                        HapticFeedback.heavyImpact();
+                        _showDeleteLabelDialog(label);
+                      },
                 borderRadius: BorderRadius.circular(25),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   decoration: BoxDecoration(
-                    color: isSelected 
-                      ? theme.colorScheme.primary 
-                      : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.3,
+                          ),
                     borderRadius: BorderRadius.circular(25),
-                    boxShadow: isSelected ? [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      )
-                    ] : [],
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.3,
+                              ),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : [],
                   ),
                   child: Center(
                     child: Text(
                       label,
                       style: TextStyle(
-                        color: isSelected ? Colors.white : theme.colorScheme.onSurfaceVariant,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : theme.colorScheme.onSurfaceVariant,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w500,
                         fontSize: 15,
                       ),
                     ),
@@ -610,7 +723,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Label'),
-        content: Text('Are you sure you want to delete the label "$label"? This will not delete the notes.'),
+        content: Text(
+          'Are you sure you want to delete the label "$label"? This will not delete the notes.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -637,7 +752,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _showFilterSheet(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -651,7 +766,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, -5),
-            )
+            ),
           ],
         ),
         child: Column(
@@ -662,7 +777,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.4,
+                ),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -718,9 +835,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               filter: NoteFilter.byDate,
               icon: Icons.calendar_today_rounded,
               label: 'Specific Date',
-              subtitle: _noteController.selectedDate.value != null 
-                ? 'Filtering by ${_noteController.selectedDate.value!.day}/${_noteController.selectedDate.value!.month}/${_noteController.selectedDate.value!.year}'
-                : 'Choose a calendar day',
+              subtitle: _noteController.selectedDate.value != null
+                  ? 'Filtering by ${_noteController.selectedDate.value!.day}/${_noteController.selectedDate.value!.month}/${_noteController.selectedDate.value!.year}'
+                  : 'Choose a calendar day',
             ),
             const SizedBox(height: 32),
           ],
@@ -764,7 +881,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  Widget _buildFilterOption(BuildContext context, {
+  Widget _buildFilterOption(
+    BuildContext context, {
     required NoteFilter filter,
     required IconData icon,
     required String label,
@@ -772,28 +890,36 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }) {
     final theme = Theme.of(context);
     final isSelected = _noteController.currentFilter.value == filter;
-    
+
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.primary.withValues(alpha: 0.1) : Colors.transparent,
+          color: isSelected
+              ? theme.colorScheme.primary.withValues(alpha: 0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
           icon,
-          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+          color: isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurfaceVariant,
         ),
       ),
       title: Text(
         label,
         style: TextStyle(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+          color: isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurface,
         ),
       ),
       subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
-      trailing: isSelected ? Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 20) : null,
+      trailing: isSelected
+          ? Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 20)
+          : null,
       onTap: () => _handleFilterTap(filter),
     );
   }

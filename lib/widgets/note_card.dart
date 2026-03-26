@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/note.dart';
+import '../theme/app_theme.dart';
 import 'loading_widget.dart';
 import 'dart:io';
 
@@ -14,16 +15,19 @@ class NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color contrastColor = Color(note.color).computeLuminance() > 0.5
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final displayColor = AppTheme.getNoteColor(note.color, isDarkMode);
+
+    final Color contrastColor = displayColor.computeLuminance() > 0.5
         ? Colors.black87
         : Colors.white;
-    final Color hintColor = Color(note.color).computeLuminance() > 0.5
+    final Color hintColor = displayColor.computeLuminance() > 0.5
         ? Colors.black54
         : Colors.white70;
 
     return Card(
       elevation: 0.5,
-      color: Color(note.color).withValues(alpha: 0.95),
+      color: displayColor.withValues(alpha: 0.95),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
@@ -101,8 +105,7 @@ class NoteCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       note.title.isEmpty ? 'Untitled' : note.title,
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: contrastColor,
                       ),
@@ -123,8 +126,7 @@ class NoteCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   note.content,
-                  style: TextStyle(
-                    fontSize: 13,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     height: 1.4,
                     color: contrastColor.withValues(alpha: 0.8),
                   ),
