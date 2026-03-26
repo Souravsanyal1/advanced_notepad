@@ -126,14 +126,14 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
             end: Alignment.bottomRight,
             colors: isDarkMode
                 ? [
-                    const Color(0xFF0F0C29),
-                    const Color(0xFF302B63),
-                    const Color(0xFF24243E),
+                    const Color(0xFF000000),
+                    const Color(0xFF121212),
+                    const Color(0xFF1A1A1A),
                   ]
                 : [
-                    const Color(0xFFF3E5F5),
-                    const Color(0xFFE1BEE7),
-                    const Color(0xFFD1C4E9),
+                    const Color(0xFFFFFFFF),
+                    const Color(0xFFF8F9FA),
+                    const Color(0xFFE9ECEF),
                   ],
           ),
         ),
@@ -157,7 +157,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                           color: (isDarkMode ? Colors.white : Colors.deepPurple).withValues(alpha: 0.1),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.red.withValues(alpha: isDarkMode ? 0.2 : 0.15),
+                              color: Colors.red.withValues(alpha: isDarkMode ? 0.3 : 0.2),
                               blurRadius: _glowAnimation.value,
                               spreadRadius: _glowAnimation.value / 2,
                             ),
@@ -218,7 +218,7 @@ class _DonationScreenState extends State<DonationScreen> with SingleTickerProvid
                         color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: isDarkMode ? 0.05 : 0.02),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: isDarkMode ? 0.1 : 0.05),
+                          color: (isDarkMode ? Colors.white : Colors.black).withValues(alpha: isDarkMode ? 0.15 : 0.1),
                           width: 1.5,
                         ),
                       ),
