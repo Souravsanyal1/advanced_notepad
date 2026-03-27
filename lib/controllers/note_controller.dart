@@ -107,8 +107,13 @@ class NoteController extends GetxController {
 
   // CRUD Operations
   Future<void> addNote(Note note) async {
-    await _dbService.addNote(note);
-    _firestoreService.syncNote(note); // Background sync
+    // Generate a unique ID if not already present
+    Note finalNote = note;
+    if (note.id.isEmpty) {
+      finalNote = note.copyWith(id: _firestoreService.generateId());
+    }
+    await _dbService.addNote(finalNote);
+    _firestoreService.syncNote(finalNote); // Background sync
   }
 
   Future<void> updateNote(Note note) async {

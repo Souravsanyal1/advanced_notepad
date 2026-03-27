@@ -85,6 +85,7 @@ class Note extends HiveObject {
   }
 
   Note copyWith({
+    String? id,
     String? title,
     String? content,
     int? color,
@@ -98,7 +99,7 @@ class Note extends HiveObject {
     String? signatureUrl,
   }) {
     return Note(
-      id: id,
+      id: id ?? this.id,
       title: title ?? this.title,
       content: content ?? this.content,
       color: color ?? this.color,

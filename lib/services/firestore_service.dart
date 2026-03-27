@@ -6,6 +6,9 @@ class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final String collection = 'notes';
 
+  // Generate a unique ID for a new note
+  String generateId() => _db.collection(collection).doc().id;
+
   // Sync a single note to Firestore
   Future<void> syncNote(Note note) async {
     try {
