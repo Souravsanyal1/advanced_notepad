@@ -17,6 +17,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'controllers/developer_controller.dart';
+import 'controllers/auth_controller.dart';
+import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +41,7 @@ void main() async {
   await notificationService.initialize();
   Get.put(notificationService);
 
+  Get.put(AuthController());
   Get.put(NoteController());
   Get.lazyPut(() => DeveloperController());
   
@@ -72,6 +75,7 @@ class MyApp extends StatelessWidget {
           binding: BindingsBuilder(() => Get.lazyPut(() => DeveloperController())),
         ),
         GetPage(name: '/donation', page: () => const DonationScreen()),
+        GetPage(name: '/login', page: () => const LoginScreen()),
       ],
     ));
   }

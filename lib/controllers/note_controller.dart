@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../models/note.dart';
 import '../services/local_database_service.dart';
 import '../services/firestore_service.dart';
+import 'auth_controller.dart';
 
 enum NoteFilter {
   all,
@@ -15,6 +16,7 @@ enum NoteFilter {
 class NoteController extends GetxController {
   final LocalDatabaseService _dbService = Get.find<LocalDatabaseService>();
   final FirestoreService _firestoreService = FirestoreService();
+  final AuthController _authController = Get.find<AuthController>();
 
   final RxList<Note> allNotes = <Note>[].obs;
   final RxList<Note> favoriteNotes = <Note>[].obs;
@@ -113,7 +115,26 @@ class NoteController extends GetxController {
       finalNote = note.copyWith(id: _firestoreService.generateId());
     }
     await _dbService.addNote(finalNote);
-    _firestoreService.syncNote(finalNote); // Background sync
+    
+    // Background sync only if logged in
+    if (_authController.isLoggedIn) {
+      _firestoreService.syncNote(finalNote);
+    }
+  }
+
+  Future<void> syncAll() async {
+    if (!_authController.isLoggedIn) return;
+    
+    isLoading.value = true;
+    try {
+      final notes = await _dbService.getNotesOnce();
+      for (var note in notes) {
+        await _firestoreService.syncNote(note);
+      }
+      Get.snackbar('Cloud Sync', 'All notes synchronized to your account.');
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> updateNote(Note note) async {
@@ -151,19 +172,25 @@ class NoteController extends GetxController {
   Future<void> togglePin(Note note) async {
     final updatedNote = note.copyWith(isPinned: !note.isPinned);
     await _dbService.updateNote(updatedNote);
-    _firestoreService.syncNote(updatedNote);
+    if (_authController.isLoggedIn) {
+      _firestoreService.syncNote(updatedNote);
+    }
   }
 
   Future<void> toggleFavorite(Note note) async {
     final updatedNote = note.copyWith(isFavorite: !note.isFavorite);
     await _dbService.updateNote(updatedNote);
-    _firestoreService.syncNote(updatedNote);
+    if (_authController.isLoggedIn) {
+      _firestoreService.syncNote(updatedNote);
+    }
   }
 
   Future<void> toggleArchive(Note note) async {
     final updatedNote = note.copyWith(isArchived: !note.isArchived);
     await _dbService.updateNote(updatedNote);
-    _firestoreService.syncNote(updatedNote);
+    if (_authController.isLoggedIn) {
+      _firestoreService.syncNote(updatedNote);
+    }
   }
 
   Future<void> moveToTrash(Note note) async {
@@ -201,6 +228,9 @@ class NoteController extends GetxController {
   Future<void> fetchNotes() async {
     isLoading.value = true;
     try {
+      if (_authController.isLoggedIn) {
+        await _downloadNotesFromCloud();
+      }
       // Small delay to show off the beautiful shimmers
       await Future.delayed(const Duration(milliseconds: 800));
       _listenToNotes();
@@ -208,6 +238,23 @@ class NoteController extends GetxController {
       _listenToSpecialLists();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> _downloadNotesFromCloud() async {
+    try {
+      // Get the first snapshot of cloud notes
+      final cloudNotes = await _firestoreService.getNotes().first;
+      for (var note in cloudNotes) {
+        final localNote = _dbService.getNote(note.id);
+        // Sync logic: Only update local if it doesn't exist or cloud note is newer
+        if (localNote == null || note.updatedAt.isAfter(localNote.updatedAt)) {
+          await _dbService.addNote(note);
+        }
+      }
+    } catch (e) {
+      // Quietly fail or log, as this is a background-style sync
+      print('Cloud download error: $e');
     }
   }
 

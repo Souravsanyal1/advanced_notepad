@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "37876147762-doh3pe0i6eg80t2oojajum2t991abv88.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.app.notepad",
+            "certificate_hash": "fa292f6f1524299e6f1c7d92ecd1c6fef96df04e"
+          }
+        },
+        {
           "client_id": "37876147762-dcmf01uandqtvfd8nvg47abnugpk5pce.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -30,6 +38,85 @@
             {
               "client_id": "37876147762-dcmf01uandqtvfd8nvg47abnugpk5pce.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "37876147762-bcpngf7i2pkijpp0a87k2sor5jdbt2m5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.remake"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:37876147762:android:a0db627d347ec31d11fe2b",
+        "android_client_info": {
+          "package_name": "com.example.remake"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "37876147762-dcmf01uandqtvfd8nvg47abnugpk5pce.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDp7D5be9rh6TIF99Z9Z0HSvdjjliaIHZg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "37876147762-dcmf01uandqtvfd8nvg47abnugpk5pce.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "37876147762-bcpngf7i2pkijpp0a87k2sor5jdbt2m5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.remake"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:37876147762:android:9c0dd6a4607d84d611fe2b",
+        "android_client_info": {
+          "package_name": "com.example.royalremake"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "37876147762-dcmf01uandqtvfd8nvg47abnugpk5pce.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDp7D5be9rh6TIF99Z9Z0HSvdjjliaIHZg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "37876147762-dcmf01uandqtvfd8nvg47abnugpk5pce.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "37876147762-bcpngf7i2pkijpp0a87k2sor5jdbt2m5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.remake"
+              }
             }
           ]
         }

@@ -16,6 +16,7 @@ import '../controllers/note_controller.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/premium_fab.dart';
+import '../controllers/auth_controller.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +28,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   final NoteController _noteController = Get.find<NoteController>();
+  final AuthController _authController = Get.find<AuthController>();
   final ProfileService _profileService = ProfileService();
   final ScrollController _labelScrollController = ScrollController();
   late PageController _pageController;
@@ -147,17 +149,27 @@ class _HomeScreenState extends State<HomeScreen>
                       ],
                     ),
                   ),
-                  child: CircleAvatar(
-                    radius: 16,
-                    backgroundImage: _profileImageUrl != null
-                        ? (_profileImageUrl!.startsWith('http')
-                              ? CachedNetworkImageProvider(_profileImageUrl!)
-                              : FileImage(File(_profileImageUrl!))
-                                    as ImageProvider)
-                        : null,
-                    child: _profileImageUrl == null
-                        ? const Icon(Icons.person, size: 20)
-                        : null,
+                  child: InkWell(
+                    onTap: () {
+                      if (_authController.isLoggedIn) {
+                        _showProfileSheet(context);
+                      } else {
+                        Get.toNamed('/login');
+                      }
+                    },
+                    child: Obx(() => CircleAvatar(
+                      radius: 16,
+                      backgroundImage: _authController.isLoggedIn && _authController.user?.photoURL != null
+                          ? CachedNetworkImageProvider(_authController.user!.photoURL!)
+                          : (_profileImageUrl != null
+                              ? (_profileImageUrl!.startsWith('http')
+                                  ? CachedNetworkImageProvider(_profileImageUrl!)
+                                  : FileImage(File(_profileImageUrl!)) as ImageProvider)
+                              : null),
+                      child: (!_authController.isLoggedIn && _profileImageUrl == null)
+                          ? const Icon(Icons.person, size: 20)
+                          : null,
+                    )),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -930,6 +942,63 @@ class _HomeScreenState extends State<HomeScreen>
       endIndent: 24,
       height: 1,
       color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+    );
+  }
+
+  void _showProfileSheet(BuildContext context) {
+    final theme = Theme.of(context);
+    final user = _authController.user;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundImage: user?.photoURL != null 
+                ? CachedNetworkImageProvider(user!.photoURL!) 
+                : null,
+              child: user?.photoURL == null ? const Icon(Icons.person, size: 40) : null,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              user?.displayName ?? 'Cloud User',
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              user?.email ?? '',
+              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.sync_rounded),
+              title: const Text('Sync All Notes Now'),
+              onTap: () {
+                Navigator.pop(context);
+                _noteController.syncAll();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout_rounded, color: Colors.red),
+              title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _authController.logout();
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -26,6 +26,10 @@ class LocalDatabaseService {
         .startWith(_getFilteredNotes(label, isArchived, isDeleted, isFavorite));
   }
 
+  Future<List<Note>> getNotesOnce({String? label, bool? isArchived, bool? isDeleted, bool? isFavorite}) async {
+    return _getFilteredNotes(label, isArchived, isDeleted, isFavorite);
+  }
+
   List<Note> _getFilteredNotes(String? label, bool? isArchived, bool? isDeleted, bool? isFavorite) {
     var notes = _notesBox.values.toList();
     
