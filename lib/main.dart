@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
     
     return ShowCaseWidget(
       builder: (context) => Obx(() => GetMaterialApp(
-        title: 'Advanced Notepad',
+        title: 'Advance NotePad',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,

@@ -10,7 +10,6 @@ import '../services/profile_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:upgrader/upgrader.dart';
 import 'edit_note_screen.dart';
-import 'about_screen.dart';
 
 import 'package:get/get.dart';
 import '../models/note.dart';
@@ -79,7 +78,6 @@ class _HomeScreenState extends State<HomeScreen>
         }
       }
 
-      _checkFirstRun();
       _checkShowcase(context);
     });
   }
@@ -98,17 +96,6 @@ class _HomeScreenState extends State<HomeScreen>
           _fabKey,
         ]);
         await prefs.setBool('has_seen_showcase_v1', true);
-      }
-    }
-  }
-
-  Future<void> _checkFirstRun() async {
-    final prefs = await SharedPreferences.getInstance();
-    final bool hasSeenInfo = prefs.getBool('has_seen_welcome_info_v1') ?? false;
-    if (!hasSeenInfo) {
-      await prefs.setBool('has_seen_welcome_info_v1', true);
-      if (mounted) {
-        _showInformationSheet();
       }
     }
   }
@@ -1063,13 +1050,4 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  void _showInformationSheet() {
-    Get.bottomSheet(
-      const AboutScreen(),
-      isScrollControlled: true,
-      ignoreSafeArea: false,
-      backgroundColor: Colors.transparent,
-      enableDrag: true,
-    );
-  }
 }

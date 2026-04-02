@@ -62,7 +62,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           content: SingleChildScrollView(
             child: Text(
-              'By using Advanced Notepad, you agree to store your data securely in Cloud Firestore and handle your account responsibility. We respect your privacy and do not share your notes with third parties.',
+              'By using Advance NotePad, you agree to store your data securely in Cloud Firestore and handle your account responsibility. We respect your privacy and do not share your notes with third parties.',
               style: GoogleFonts.outfit(),
             ),
           ),

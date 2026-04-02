@@ -73,7 +73,7 @@ class AboutScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 32),
                     Text(
-                      'Advanced Notepad',
+                      'Advance NotePad',
                       style: GoogleFonts.outfit(
                         fontSize: 34,
                         fontWeight: FontWeight.bold,
@@ -131,7 +131,7 @@ class AboutScreen extends StatelessWidget {
                     const SizedBox(height: 60),
                     
                     Text(
-                      '© 2026 Advanced Notepad',
+                      '© 2026 Advance NotePad',
                       style: GoogleFonts.outfit(
                         fontSize: 12,
                         color: isDarkMode ? Colors.white38 : Colors.black38,
