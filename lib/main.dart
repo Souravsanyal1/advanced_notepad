@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/archive_screen.dart';
 import 'screens/trash_screen.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'screens/about_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/developer_info_screen.dart';
@@ -64,7 +65,12 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       getPages: [
         GetPage(name: '/', page: () => const SplashScreen()),
-        GetPage(name: '/home', page: () => const HomeScreen()),
+        GetPage(
+          name: '/home', 
+          page: () => ShowCaseWidget(
+            builder: (context) => const HomeScreen(),
+          ),
+        ),
         GetPage(name: '/favorites', page: () => const FavoritesScreen()),
         GetPage(name: '/archive', page: () => const ArchiveScreen()),
         GetPage(name: '/trash', page: () => const TrashScreen()),

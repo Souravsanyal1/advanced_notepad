@@ -134,9 +134,8 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ShowCaseWidget(
-      builder: (context) => Scaffold(
-          drawer: const AppDrawer(),
+    return Scaffold(
+      drawer: const AppDrawer(),
           body: UpgradeAlert(
         upgrader: Upgrader(),
         dialogStyle: UpgradeDialogStyle.material,
@@ -331,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen>
           },
         ),
       ),
-    ));
+    );
   }
 
   Widget _buildNotesContent(ThemeData theme, String currentLabel) {
