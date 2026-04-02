@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
@@ -9,6 +10,7 @@ import '../services/profile_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:upgrader/upgrader.dart';
 import 'edit_note_screen.dart';
+import 'about_screen.dart';
 
 import 'package:get/get.dart';
 import '../models/note.dart';
@@ -35,6 +37,13 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isAnimatingToPage = false;
   final RxString _searchQuery = ''.obs;
   String? _profileImageUrl;
+
+  // Showcase Keys
+  final GlobalKey _menuKey = GlobalKey();
+  final GlobalKey _filterKey = GlobalKey();
+  final GlobalKey _profileKey = GlobalKey();
+  final GlobalKey _searchKey = GlobalKey();
+  final GlobalKey _fabKey = GlobalKey();
 
   @override
   void initState() {
@@ -71,7 +80,28 @@ class _HomeScreenState extends State<HomeScreen>
       }
 
       _checkFirstRun();
+      _checkShowcase();
     });
+  }
+
+  Future<void> _checkShowcase() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool hasSeenShowcase = prefs.getBool('has_seen_showcase_v1') ?? false;
+    
+    if (!hasSeenShowcase) {
+      // Wait a bit for animations to settle
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) {
+        ShowCaseWidget.of(context).startShowCase([
+          _menuKey,
+          _searchKey,
+          _filterKey,
+          _profileKey,
+          _fabKey,
+        ]);
+        await prefs.setBool('has_seen_showcase_v1', true);
+      }
+    }
   }
 
   Future<void> _checkFirstRun() async {
@@ -80,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen>
     if (!hasSeenInfo) {
       await prefs.setBool('has_seen_welcome_info_v1', true);
       if (mounted) {
-        Get.toNamed('/developer-info');
+        _showInformationSheet();
       }
     }
   }
@@ -104,9 +134,10 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      drawer: const AppDrawer(),
-      body: UpgradeAlert(
+    return ShowCaseWidget(
+      builder: (context) => Scaffold(
+          drawer: const AppDrawer(),
+          body: UpgradeAlert(
         upgrader: Upgrader(),
         dialogStyle: UpgradeDialogStyle.material,
         showIgnore: false,
@@ -126,14 +157,30 @@ class _HomeScreenState extends State<HomeScreen>
               pinned: true,
               elevation: innerBoxIsScrolled ? 4 : 0,
               forceElevated: innerBoxIsScrolled,
-              leading: IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () => Scaffold.of(context).openDrawer(),
+              leading: Showcase(
+                key: _menuKey,
+                title: 'Menu',
+                description: 'Access Trash, Archive, and App Information here.',
+                child: Tooltip(
+                  message: 'Open Menu',
+                  child: IconButton(
+                    icon: const Icon(Icons.menu),
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                  ),
+                ),
               ),
               actions: [
-                IconButton(
-                  icon: const Icon(Icons.tune),
-                  onPressed: () => _showFilterSheet(context),
+                Showcase(
+                  key: _filterKey,
+                  title: 'Filter & Sort',
+                  description: 'Organize your notes by date, color, or priority.',
+                  child: Tooltip(
+                    message: 'Sort & Filter',
+                    child: IconButton(
+                      icon: const Icon(Icons.tune),
+                      onPressed: () => _showFilterSheet(context),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Container(
@@ -149,27 +196,35 @@ class _HomeScreenState extends State<HomeScreen>
                       ],
                     ),
                   ),
-                  child: InkWell(
-                    onTap: () {
-                      if (_authController.isLoggedIn) {
-                        _showProfileSheet(context);
-                      } else {
-                        Get.toNamed('/login');
-                      }
-                    },
-                    child: Obx(() => CircleAvatar(
-                      radius: 16,
-                      backgroundImage: _authController.isLoggedIn && _authController.user?.photoURL != null
-                          ? CachedNetworkImageProvider(_authController.user!.photoURL!)
-                          : (_profileImageUrl != null
-                              ? (_profileImageUrl!.startsWith('http')
-                                  ? CachedNetworkImageProvider(_profileImageUrl!)
-                                  : FileImage(File(_profileImageUrl!)) as ImageProvider)
-                              : null),
-                      child: (!_authController.isLoggedIn && _profileImageUrl == null)
-                          ? const Icon(Icons.person, size: 20)
-                          : null,
-                    )),
+                  child: Showcase(
+                    key: _profileKey,
+                    title: 'Sync & Profile',
+                    description: 'Log in with Google to sync your notes to the cloud.',
+                    child: Tooltip(
+                      message: _authController.isLoggedIn ? 'Profile' : 'Login',
+                      child: InkWell(
+                        onTap: () {
+                          if (_authController.isLoggedIn) {
+                            _showProfileSheet(context);
+                          } else {
+                            Get.toNamed('/login');
+                          }
+                        },
+                        child: Obx(() => CircleAvatar(
+                          radius: 16,
+                          backgroundImage: _authController.isLoggedIn && _authController.user?.photoURL != null
+                              ? CachedNetworkImageProvider(_authController.user!.photoURL!)
+                              : (_profileImageUrl != null
+                                  ? (_profileImageUrl!.startsWith('http')
+                                      ? CachedNetworkImageProvider(_profileImageUrl!)
+                                      : FileImage(File(_profileImageUrl!)) as ImageProvider)
+                                  : null),
+                          child: (!_authController.isLoggedIn && _profileImageUrl == null)
+                              ? const Icon(Icons.person, size: 20)
+                              : null,
+                        )),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -178,37 +233,42 @@ class _HomeScreenState extends State<HomeScreen>
                 preferredSize: const Size.fromHeight(70),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: theme.brightness == Brightness.dark
-                          ? Colors.black.withValues(alpha: 0.3)
-                          : theme.colorScheme.surfaceContainerHighest
-                                .withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
+                  child: Showcase(
+                    key: _searchKey,
+                    title: 'Search Notes',
+                    description: 'Quickly find any note by its title or content.',
+                    child: Container(
+                      decoration: BoxDecoration(
                         color: theme.brightness == Brightness.dark
-                            ? Colors.white.withValues(alpha: 0.1)
-                            : theme.colorScheme.outline.withValues(alpha: 0.2),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                            ? Colors.black.withValues(alpha: 0.3)
+                            : theme.colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: theme.brightness == Brightness.dark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : theme.colorScheme.outline.withValues(alpha: 0.2),
                         ),
-                      ],
-                    ),
-                    child: TextField(
-                      decoration: const InputDecoration(
-                        hintText: 'Search notes...',
-                        prefixIcon: Icon(Icons.search, color: Colors.grey),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      onChanged: (value) => _searchQuery.value = value,
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          hintText: 'Search notes...',
+                          prefixIcon: Icon(Icons.search, color: Colors.grey),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                        onChanged: (value) => _searchQuery.value = value,
+                      ),
                     ),
                   ),
                 ),
@@ -250,20 +310,28 @@ class _HomeScreenState extends State<HomeScreen>
           }),
         ),
       ),
-      floatingActionButton: OpenContainer(
-        transitionDuration: const Duration(milliseconds: 600),
-        openColor: theme.colorScheme.surface,
-        closedElevation: 0,
-        closedColor: Colors.transparent,
-        closedShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
+      floatingActionButton: Showcase(
+        key: _fabKey,
+        title: 'New Note',
+        description: 'Tap here to start writing your next big idea.',
+        child: OpenContainer(
+          transitionDuration: const Duration(milliseconds: 600),
+          openColor: theme.colorScheme.surface,
+          closedElevation: 0,
+          closedColor: Colors.transparent,
+          closedShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          openBuilder: (context, action) => const EditNoteScreen(),
+          closedBuilder: (context, action) {
+            return Tooltip(
+              message: 'Create New Note',
+              child: PremiumFab(onTap: action, label: 'New Note'),
+            );
+          },
         ),
-        openBuilder: (context, action) => const EditNoteScreen(),
-        closedBuilder: (context, action) {
-          return PremiumFab(onTap: action, label: 'New Note');
-        },
       ),
-    );
+    ));
   }
 
   Widget _buildNotesContent(ThemeData theme, String currentLabel) {
@@ -999,6 +1067,16 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
       ),
+    );
+  }
+
+  void _showInformationSheet() {
+    Get.bottomSheet(
+      const AboutScreen(),
+      isScrollControlled: true,
+      ignoreSafeArea: false,
+      backgroundColor: Colors.transparent,
+      enableDrag: true,
     );
   }
 }

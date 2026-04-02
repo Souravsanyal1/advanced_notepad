@@ -12,6 +12,7 @@ import '../controllers/note_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../services/storage_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../screens/about_screen.dart';
 import 'loading_widget.dart';
 
 class AppDrawer extends StatefulWidget {
@@ -888,7 +889,16 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
           _buildBottomItem(
             Icons.info_outline,
             'Information',
-            () => Get.toNamed('/about'),
+            () {
+              Navigator.pop(context); // Close drawer
+              Get.bottomSheet(
+                const AboutScreen(),
+                isScrollControlled: true,
+                ignoreSafeArea: false,
+                backgroundColor: Colors.transparent,
+                enableDrag: true,
+              );
+            },
           ),
           _buildBottomItem(
             Icons.star_rate_rounded,
