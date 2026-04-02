@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'screens/home_screen.dart';
 import 'screens/archive_screen.dart';
 import 'screens/trash_screen.dart';
-import 'package:showcaseview/showcaseview.dart';
 import 'screens/about_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/developer_info_screen.dart';
@@ -56,33 +56,30 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeService = Get.find<ThemeService>();
     
-    return Obx(() => GetMaterialApp(
-      title: 'Advanced Notepad',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeService.themeMode,
-      initialRoute: '/',
-      getPages: [
-        GetPage(name: '/', page: () => const SplashScreen()),
-        GetPage(
-          name: '/home', 
-          page: () => ShowCaseWidget(
-            builder: (context) => const HomeScreen(),
+    return ShowCaseWidget(
+      builder: (context) => Obx(() => GetMaterialApp(
+        title: 'Advanced Notepad',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeService.themeMode,
+        initialRoute: '/',
+        getPages: [
+          GetPage(name: '/', page: () => const SplashScreen()),
+          GetPage(name: '/home', page: () => const HomeScreen()),
+          GetPage(name: '/favorites', page: () => const FavoritesScreen()),
+          GetPage(name: '/archive', page: () => const ArchiveScreen()),
+          GetPage(name: '/trash', page: () => const TrashScreen()),
+          GetPage(name: '/about', page: () => const AboutScreen()),
+          GetPage(
+            name: '/developer-info', 
+            page: () => const DeveloperInfoScreen(),
+            binding: BindingsBuilder(() => Get.lazyPut(() => DeveloperController())),
           ),
-        ),
-        GetPage(name: '/favorites', page: () => const FavoritesScreen()),
-        GetPage(name: '/archive', page: () => const ArchiveScreen()),
-        GetPage(name: '/trash', page: () => const TrashScreen()),
-        GetPage(name: '/about', page: () => const AboutScreen()),
-        GetPage(
-          name: '/developer-info', 
-          page: () => const DeveloperInfoScreen(),
-          binding: BindingsBuilder(() => Get.lazyPut(() => DeveloperController())),
-        ),
-        GetPage(name: '/donation', page: () => const DonationScreen()),
-        GetPage(name: '/login', page: () => const LoginScreen()),
-      ],
-    ));
+          GetPage(name: '/donation', page: () => const DonationScreen()),
+          GetPage(name: '/login', page: () => const LoginScreen()),
+        ],
+      )),
+    );
   }
 }

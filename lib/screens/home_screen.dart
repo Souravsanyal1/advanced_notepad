@@ -80,23 +80,21 @@ class _HomeScreenState extends State<HomeScreen>
       }
 
       _checkFirstRun();
-      _checkShowcase();
+      _checkShowcase(context);
     });
   }
 
-  Future<void> _checkShowcase() async {
+  Future<void> _checkShowcase(BuildContext showcaseContext) async {
     final prefs = await SharedPreferences.getInstance();
     final bool hasSeenShowcase = prefs.getBool('has_seen_showcase_v1') ?? false;
     
     if (!hasSeenShowcase) {
-      // Wait a bit for animations to settle
-      await Future.delayed(const Duration(seconds: 1));
       if (mounted) {
-        ShowCaseWidget.of(context).startShowCase([
+        ShowCaseWidget.of(showcaseContext).startShowCase([
           _menuKey,
+          _profileKey,
           _searchKey,
           _filterKey,
-          _profileKey,
           _fabKey,
         ]);
         await prefs.setBool('has_seen_showcase_v1', true);
@@ -135,202 +133,198 @@ class _HomeScreenState extends State<HomeScreen>
     final theme = Theme.of(context);
 
     return Scaffold(
-      drawer: const AppDrawer(),
-          body: UpgradeAlert(
-        upgrader: Upgrader(),
-        dialogStyle: UpgradeDialogStyle.material,
-        showIgnore: false,
-        child: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            SliverAppBar(
-              title: Obx(
-                () => Text(
-                  _noteController.selectedLabel.value.isEmpty
-                      ? 'My Notes'
-                      : _noteController.selectedLabel.value,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-              floating: true,
-              snap: true,
-              pinned: true,
-              elevation: innerBoxIsScrolled ? 4 : 0,
-              forceElevated: innerBoxIsScrolled,
-              leading: Showcase(
-                key: _menuKey,
-                title: 'Menu',
-                description: 'Access Trash, Archive, and App Information here.',
-                child: Tooltip(
-                  message: 'Open Menu',
-                  child: IconButton(
-                    icon: const Icon(Icons.menu),
-                    onPressed: () => Scaffold.of(context).openDrawer(),
-                  ),
-                ),
-              ),
-              actions: [
-                Showcase(
-                  key: _filterKey,
-                  title: 'Filter & Sort',
-                  description: 'Organize your notes by date, color, or priority.',
-                  child: Tooltip(
-                    message: 'Sort & Filter',
-                    child: IconButton(
-                      icon: const Icon(Icons.tune),
-                      onPressed: () => _showFilterSheet(context),
+            drawer: const AppDrawer(),
+            body: UpgradeAlert(
+              upgrader: Upgrader(),
+              dialogStyle: UpgradeDialogStyle.material,
+              showIgnore: false,
+              child: NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                  SliverAppBar(
+                    title: Obx(
+                      () => Text(
+                        _noteController.selectedLabel.value.isEmpty
+                            ? 'My Notes'
+                            : _noteController.selectedLabel.value,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    floating: true,
+                    snap: true,
+                    pinned: true,
+                    elevation: innerBoxIsScrolled ? 4 : 0,
+                    forceElevated: innerBoxIsScrolled,
+                    leading: Showcase(
+                      key: _menuKey,
+                      title: 'Menu',
+                      description: 'Access Trash, Archive, and App Information here.',
+                      child: Tooltip(
+                        message: 'Open Menu',
+                        child: IconButton(
+                          icon: const Icon(Icons.menu),
+                          onPressed: () => Scaffold.of(context).openDrawer(),
+                        ),
+                      ),
+                    ),
+                    actions: [
+                      Showcase(
+                        key: _filterKey,
+                        title: 'Filter & Sort',
+                        description: 'Organize your notes by date, color, or priority.',
+                        child: Tooltip(
+                          message: 'Sort & Filter',
+                          child: IconButton(
+                            icon: const Icon(Icons.tune),
+                            onPressed: () => _showFilterSheet(context),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: SweepGradient(
+                            colors: [
+                              Color(0xFF00ACC1),
+                              Color(0xFF8E24AA),
+                              Color(0xFF0D1B3E),
+                              Color(0xFF00ACC1),
+                            ],
+                          ),
+                        ),
+                        child: Showcase(
+                          key: _profileKey,
+                          title: 'Sync & Profile',
+                          description: 'Log in with Google to sync your notes to the cloud.',
+                          child: Tooltip(
+                            message: _authController.isLoggedIn ? 'Profile' : 'Login',
+                            child: InkWell(
+                              onTap: () {
+                                if (_authController.isLoggedIn) {
+                                  _showProfileSheet(context);
+                                } else {
+                                  Get.toNamed('/login');
+                                }
+                              },
+                              child: Obx(() => CircleAvatar(
+                                radius: 16,
+                                backgroundImage: _authController.isLoggedIn && _authController.user?.photoURL != null
+                                    ? CachedNetworkImageProvider(_authController.user!.photoURL!)
+                                    : (_profileImageUrl != null
+                                        ? (_profileImageUrl!.startsWith('http')
+                                            ? CachedNetworkImageProvider(_profileImageUrl!)
+                                            : FileImage(File(_profileImageUrl!)) as ImageProvider)
+                                        : null),
+                                child: (!_authController.isLoggedIn && _profileImageUrl == null)
+                                    ? const Icon(Icons.person, size: 20)
+                                    : null,
+                              )),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                    ],
+                    bottom: PreferredSize(
+                      preferredSize: const Size.fromHeight(70),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: Showcase(
+                          key: _searchKey,
+                          title: 'Search Notes',
+                          description: 'Quickly find any note by its title or content.',
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: theme.brightness == Brightness.dark
+                                  ? Colors.black.withValues(alpha: 0.3)
+                                  : theme.colorScheme.surfaceContainerHighest
+                                        .withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: theme.brightness == Brightness.dark
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : theme.colorScheme.outline.withValues(alpha: 0.2),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: TextField(
+                              decoration: const InputDecoration(
+                                hintText: 'Search notes...',
+                                prefixIcon: Icon(Icons.search, color: Colors.grey),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                              ),
+                              onChanged: (value) => _searchQuery.value = value,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: SweepGradient(
-                      colors: [
-                        Color(0xFF00ACC1),
-                        Color(0xFF8E24AA),
-                        Color(0xFF0D1B3E),
-                        Color(0xFF00ACC1),
-                      ],
-                    ),
-                  ),
-                  child: Showcase(
-                    key: _profileKey,
-                    title: 'Sync & Profile',
-                    description: 'Log in with Google to sync your notes to the cloud.',
-                    child: Tooltip(
-                      message: _authController.isLoggedIn ? 'Profile' : 'Login',
-                      child: InkWell(
-                        onTap: () {
-                          if (_authController.isLoggedIn) {
-                            _showProfileSheet(context);
-                          } else {
-                            Get.toNamed('/login');
-                          }
+                  SliverToBoxAdapter(child: _buildLabelSelector(theme)),
+                ],
+                body: Obx(() {
+                  final labels = ['All', ..._noteController.labels];
+                  
+                  return PageView.builder(
+                    controller: _pageController,
+                    itemCount: labels.length,
+                    onPageChanged: (index) {
+                      final label = labels[index] == 'All' ? null : labels[index];
+                      if (!_isAnimatingToPage) {
+                        if (_noteController.selectedLabel.value != (label ?? '')) {
+                          HapticFeedback.selectionClick();
+                          _noteController.setSelectedLabel(label);
+                          _scrollToLabel(index);
+                        }
+                      }
+                    },
+                    itemBuilder: (context, index) {
+                      final currentLabel = labels[index];
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          HapticFeedback.mediumImpact();
+                          await _noteController.fetchNotes();
                         },
-                        child: Obx(() => CircleAvatar(
-                          radius: 16,
-                          backgroundImage: _authController.isLoggedIn && _authController.user?.photoURL != null
-                              ? CachedNetworkImageProvider(_authController.user!.photoURL!)
-                              : (_profileImageUrl != null
-                                  ? (_profileImageUrl!.startsWith('http')
-                                      ? CachedNetworkImageProvider(_profileImageUrl!)
-                                      : FileImage(File(_profileImageUrl!)) as ImageProvider)
-                                  : null),
-                          child: (!_authController.isLoggedIn && _profileImageUrl == null)
-                              ? const Icon(Icons.person, size: 20)
-                              : null,
-                        )),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-              ],
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(70),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Showcase(
-                    key: _searchKey,
-                    title: 'Search Notes',
-                    description: 'Quickly find any note by its title or content.',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: theme.brightness == Brightness.dark
-                            ? Colors.black.withValues(alpha: 0.3)
-                            : theme.colorScheme.surfaceContainerHighest
-                                  .withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: theme.brightness == Brightness.dark
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : theme.colorScheme.outline.withValues(alpha: 0.2),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        decoration: const InputDecoration(
-                          hintText: 'Search notes...',
-                          prefixIcon: Icon(Icons.search, color: Colors.grey),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
-                        onChanged: (value) => _searchQuery.value = value,
-                      ),
-                    ),
-                  ),
-                ),
+                        child: _buildNotesContent(theme, currentLabel),
+                      );
+                    },
+                  );
+                }),
               ),
             ),
-            SliverToBoxAdapter(child: _buildLabelSelector(theme)),
-          ],
-          body: Obx(() {
-            // Only rebuild PageView if labels list changes
-            final labels = ['All', ..._noteController.labels];
-            
-            return PageView.builder(
-              controller: _pageController,
-              itemCount: labels.length,
-              onPageChanged: (index) {
-                final label = labels[index] == 'All' ? null : labels[index];
-                
-                // Only update if not currently animating from a tap
-                // OR if we reached the target page of the animation
-                if (!_isAnimatingToPage) {
-                  if (_noteController.selectedLabel.value != (label ?? '')) {
-                    HapticFeedback.selectionClick();
-                    _noteController.setSelectedLabel(label);
-                    _scrollToLabel(index);
-                  }
-                }
-              },
-              itemBuilder: (context, index) {
-                final currentLabel = labels[index];
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    HapticFeedback.mediumImpact();
-                    await _noteController.fetchNotes();
-                  },
-                  child: _buildNotesContent(theme, currentLabel),
-                );
-              },
-            );
-          }),
-        ),
-      ),
-      floatingActionButton: Showcase(
-        key: _fabKey,
-        title: 'New Note',
-        description: 'Tap here to start writing your next big idea.',
-        child: OpenContainer(
-          transitionDuration: const Duration(milliseconds: 600),
-          openColor: theme.colorScheme.surface,
-          closedElevation: 0,
-          closedColor: Colors.transparent,
-          closedShape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+            floatingActionButton: Showcase(
+              key: _fabKey,
+              title: 'New Note',
+              description: 'Tap here to start writing your next big idea.',
+              child: OpenContainer(
+                transitionDuration: const Duration(milliseconds: 600),
+                openColor: theme.colorScheme.surface,
+                closedElevation: 0,
+                closedColor: Colors.transparent,
+                closedShape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                openBuilder: (context, action) => const EditNoteScreen(),
+                closedBuilder: (context, action) {
+                  return Tooltip(
+                    message: 'Create New Note',
+                    child: PremiumFab(onTap: action, label: 'New Note'),
+                  );
+                },
+            ),
           ),
-          openBuilder: (context, action) => const EditNoteScreen(),
-          closedBuilder: (context, action) {
-            return Tooltip(
-              message: 'Create New Note',
-              child: PremiumFab(onTap: action, label: 'New Note'),
-            );
-          },
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildNotesContent(ThemeData theme, String currentLabel) {
