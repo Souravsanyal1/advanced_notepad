@@ -45,8 +45,46 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _onFinish() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isFirstLaunch', false);
-    Get.offAll(() => const HomeScreen());
+    
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+          title: Text(
+            'Terms & Conditions',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+          ),
+          content: SingleChildScrollView(
+            child: Text(
+              'By using Advanced Notepad, you agree to store your data securely in Cloud Firestore and handle your account responsibility. We respect your privacy and do not share your notes with third parties.',
+              style: GoogleFonts.outfit(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await prefs.setBool('isFirstLaunch', false);
+                await prefs.setBool('termsAccepted', true);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  Get.offAll(() => const HomeScreen());
+                }
+              },
+              child: Text(
+                'Accept & Continue',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

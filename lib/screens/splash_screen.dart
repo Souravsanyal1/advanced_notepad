@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'onboarding_screen.dart';
 import 'home_screen.dart';
-import 'about_screen.dart';
 import '../widgets/loading_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -37,61 +36,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
 
-    final bool termsAccepted = prefs.getBool('termsAccepted') ?? false;
-
-    if (!termsAccepted) {
-      _showTermsDialog(prefs);
-    } else {
-      _proceedToApp(prefs);
-    }
-  }
-
-  void _showTermsDialog(SharedPreferences prefs) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-          title: Text(
-            'Terms & Conditions',
-            style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-          ),
-          content: SingleChildScrollView(
-            child: Text(
-              'By using Advanced Notepad, you agree to store your data securely in Cloud Firestore and handle your account responsibility. We respect your privacy and do not share your notes with third parties.',
-              style: GoogleFonts.outfit(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                await prefs.setBool('termsAccepted', true);
-                Navigator.pop(context);
-                _showInfoAndProceed(prefs);
-              },
-              child: Text(
-                'Accept & Continue',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showInfoAndProceed(SharedPreferences prefs) {
-    // Show Information screen then go home
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const AboutScreen()),
-    );
-    
-    // Note: User will have to manually navigate back or we can add a 'Start' button in AboutScreen
-    // But since AboutScreen has a back button, it might go back to a dead splash.
-    // Better: Navigate to About with a flag or just push it.
+    _proceedToApp(prefs);
   }
 
   void _proceedToApp(SharedPreferences prefs) {
