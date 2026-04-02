@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'note_controller.dart';
+import '../services/profile_service.dart';
 
 class AuthController extends GetxController {
   final AuthService _authService = AuthService();
@@ -19,12 +20,35 @@ class AuthController extends GetxController {
     // Listen to user changes to trigger sync
     ever(_user, (user) {
       if (user != null) {
-        // Trigger generic sync in NoteController when user logs in
+        // Sync profile data from Google/Firebase
+        _syncProfileData(user);
+        
         if (Get.isRegistered<NoteController>()) {
           Get.find<NoteController>().fetchNotes();
         }
       }
     });
+  }
+
+  Future<void> _syncProfileData(User user) async {
+    final profileService = ProfileService();
+    
+    // 1. Sync name if local name is default
+    final localName = await profileService.getUserName();
+    if (localName == 'Advanced User' && user.displayName != null) {
+      await profileService.setUserName(user.displayName!);
+    }
+    
+    // 2. Sync photoURL if local is empty
+    final localPhoto = await profileService.getProfilePhoto();
+    if (localPhoto == null && user.photoURL != null) {
+      await profileService.setProfilePhoto(user.photoURL!, isCloud: true);
+    }
+    
+    // 3. Sync email
+    if (user.email != null) {
+      await profileService.setUserEmail(user.email!);
+    }
   }
 
   Future<void> loginWithGoogle() async {

@@ -9,6 +9,9 @@ import 'package:get/get.dart';
 import '../services/profile_service.dart';
 import '../services/theme_service.dart';
 import '../controllers/note_controller.dart';
+import '../controllers/auth_controller.dart';
+import '../services/storage_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'loading_widget.dart';
 
 class AppDrawer extends StatefulWidget {
@@ -22,6 +25,8 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
   final ProfileService _profileService = ProfileService();
   final ImagePicker _picker = ImagePicker();
   final NoteController _noteController = Get.find<NoteController>();
+  final AuthController _authController = Get.find<AuthController>();
+  final StorageService _storageService = StorageService();
 
   late AnimationController _rotationController;
   late AnimationController _sheenController;
@@ -111,11 +116,27 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
 
       if (image != null) {
         setState(() => _isUploadingProfile = true);
-        await _profileService.setProfilePhoto(image.path);
+        
+        String imagePath = image.path;
+        
+        // If user is logged in, upload to Firebase Storage
+        if (_authController.isLoggedIn) {
+          final cloudUrl = await _storageService.uploadProfilePhoto(File(image.path));
+          if (cloudUrl != null) {
+            imagePath = cloudUrl;
+            await _profileService.setProfilePhoto(imagePath, isCloud: true);
+          } else {
+            // Fallback to local if upload fails
+            await _profileService.setProfilePhoto(imagePath);
+          }
+        } else {
+          await _profileService.setProfilePhoto(imagePath);
+        }
+        
         setState(() => _isUploadingProfile = false);
         Get.snackbar(
           'Success',
-          'Profile photo updated',
+          _authController.isLoggedIn ? 'Profile synced to cloud' : 'Profile photo updated',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.black,
           colorText: Colors.white,
@@ -361,65 +382,62 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
             bottomRight: Radius.circular(30),
           ),
         ),
-        child: Column(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          physics: const BouncingScrollPhysics(),
           children: [
             _buildPremiumHeader(theme, isDark),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                children: [
-                  _buildDrawerItem(
-                    index: 0,
-                    icon: Icons.notes_rounded,
-                    label: 'All Notes',
-                    onTap: () {
-                      _onItemTapped(0);
-                      _noteController.setSelectedLabel(null);
-                      Navigator.pop(context);
-                    },
-                    count: _noteController.allNotes.length,
-                  ),
-                  _buildDrawerItem(
-                    index: 1,
-                    icon: Icons.favorite_outline_rounded,
-                    label: 'Favorites',
-                    onTap: () {
-                      _onItemTapped(1);
-                      Navigator.pop(context);
-                      Get.toNamed('/favorites');
-                    },
-                    count: _noteController.favoriteNotes.length,
-                  ),
-                  _buildDrawerItem(
-                    index: 2,
-                    icon: Icons.archive_outlined,
-                    label: 'Archive',
-                    onTap: () {
-                      _onItemTapped(2);
-                      Navigator.pop(context);
-                      Get.toNamed('/archive');
-                    },
-                    count: _noteController.archivedNotes.length,
-                  ),
-                  _buildDrawerItem(
-                    index: 3,
-                    icon: Icons.delete_outline_rounded,
-                    label: 'Trash',
-                    onTap: () {
-                      _onItemTapped(3);
-                      Navigator.pop(context);
-                      Get.toNamed('/trash');
-                    },
-                    count: _noteController.trashNotes.length,
-                  ),
-                  const Divider(indent: 20, endIndent: 20, height: 32),
-                  _buildThemeSection(theme, isDark),
-                  const SizedBox(height: 16),
-                  _buildLabelSection(theme),
-                ],
-              ),
+            _buildDrawerItem(
+              index: 0,
+              icon: Icons.notes_rounded,
+              label: 'All Notes',
+              onTap: () {
+                _onItemTapped(0);
+                _noteController.setSelectedLabel(null);
+                Navigator.pop(context);
+              },
+              count: _noteController.allNotes.length,
             ),
+            _buildDrawerItem(
+              index: 1,
+              icon: Icons.favorite_outline_rounded,
+              label: 'Favorites',
+              onTap: () {
+                _onItemTapped(1);
+                Navigator.pop(context);
+                Get.toNamed('/favorites');
+              },
+              count: _noteController.favoriteNotes.length,
+            ),
+            _buildDrawerItem(
+              index: 2,
+              icon: Icons.archive_outlined,
+              label: 'Archive',
+              onTap: () {
+                _onItemTapped(2);
+                Navigator.pop(context);
+                Get.toNamed('/archive');
+              },
+              count: _noteController.archivedNotes.length,
+            ),
+            _buildDrawerItem(
+              index: 3,
+              icon: Icons.delete_outline_rounded,
+              label: 'Trash',
+              onTap: () {
+                _onItemTapped(3);
+                Navigator.pop(context);
+                Get.toNamed('/trash');
+              },
+              count: _noteController.trashNotes.length,
+            ),
+            const Divider(indent: 20, endIndent: 20, height: 32),
+            _buildThemeSection(theme, isDark),
+            const SizedBox(height: 16),
+            _buildLabelSection(theme),
+            const Divider(indent: 20, endIndent: 20, height: 32),
             _buildBottomSection(theme, isDark),
+            const SizedBox(height: 32), // Bottom padding
           ],
         ),
       ),
@@ -558,8 +576,7 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
 
   Widget _buildPremiumHeader(ThemeData theme, bool isDark) {
     return Container(
-      height: 300,
-      padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0D1B3E) : const Color(0xFFF1F5F9),
         borderRadius: const BorderRadius.only(topRight: Radius.circular(30)),
@@ -870,8 +887,13 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
         children: [
           _buildBottomItem(
             Icons.info_outline,
-            'About',
+            'Information',
             () => Get.toNamed('/about'),
+          ),
+          _buildBottomItem(
+            Icons.star_rate_rounded,
+            'Rate Us',
+            () => _launchPlayStore(),
           ),
           _buildBottomItem(
             Icons.favorite_rounded,
@@ -931,5 +953,16 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+  Future<void> _launchPlayStore() async {
+    final Uri url = Uri.parse('https://play.google.com/store/apps/details?id=com.app.notepad');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      Get.snackbar(
+        'Error',
+        'Could not open Play Store',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 }

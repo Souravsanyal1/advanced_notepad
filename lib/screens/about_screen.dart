@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'dart:ui';
+import 'package:get/get.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -15,7 +16,7 @@ class AboutScreen extends StatelessWidget {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
-          'About App', 
+          'Information', 
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold)
         ),
         backgroundColor: Colors.transparent,
@@ -129,6 +130,45 @@ class AboutScreen extends StatelessWidget {
                     ),
                     
                     const SizedBox(height: 60),
+                    
+                    Container(
+                      width: double.infinity,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: const LinearGradient(
+                          colors: [Colors.blue, Colors.purple, Colors.pink],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.purple.withValues(alpha: 0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () => Get.offAllNamed('/home'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'GET STARTED',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 48),
                     
                     Text(
                       '© 2026 Advanced Notepad',
