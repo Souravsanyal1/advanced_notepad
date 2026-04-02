@@ -121,7 +121,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
-
       body: Center(
         child: FadeTransition(
           opacity: _animation,
@@ -130,35 +129,33 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             children: [
               Image.asset(
                 isDark ? 'assets/splash_dark.png' : 'assets/splash_light.png',
-                width: 280,
-                // Removed fixed height to maintain aspect ratio
+                width: 250,
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               Text(
-                'Advanced Notepad',
-                style: TextStyle(
+                'Advance NotePad',
+                style: GoogleFonts.outfit(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
+                  letterSpacing: 1.5,
                   color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
                 'Sync your thoughts, beautifully.',
-                style: TextStyle(
+                style: GoogleFonts.outfit(
                   fontSize: 16,
-                  color: (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.7),
-
-                  letterSpacing: 1.1,
+                  color: (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.6),
+                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 64),
               AppLoadingWidget(
-                color: isDark ? Colors.white70 : Colors.blueAccent,
-                size: 30,
+                color: isDark ? const Color(0xFFFF9800) : const Color(0xFFFF5722),
+                size: 32,
               ),
             ],
           ),

@@ -8,17 +8,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:37876147762:android:ca72e33f3d63d1ff11fe2b",
+        "mobilesdk_app_id": "1:37876147762:android:2cbabec08f9b63a211fe2b",
         "android_client_info": {
-          "package_name": "com.app.notepad"
+          "package_name": "com.advance.notepad"
         }
       },
       "oauth_client": [
         {
-          "client_id": "37876147762-doh3pe0i6eg80t2oojajum2t991abv88.apps.googleusercontent.com",
+          "client_id": "37876147762-l3ef6lp0h1tp0se19bmmqkb6f3hqe991.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.app.notepad",
+            "package_name": "com.advance.notepad",
             "certificate_hash": "fa292f6f1524299e6f1c7d92ecd1c6fef96df04e"
           }
         },
